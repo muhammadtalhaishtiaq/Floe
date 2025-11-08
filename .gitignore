@@ -10,7 +10,10 @@ pnpm-lock.yaml
 # .env.development
 # .env.production
 # .env.test
-# *.env
+*.env
+.env/
+
+*.dat
 
 # Build outputs
 dist/
