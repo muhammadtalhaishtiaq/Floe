@@ -27,22 +27,17 @@ class PaymentSchedulerService {
       // Find active contracts with A2A enabled and recurring payments
       const dueContractsQuery = `
         SELECT 
-          c.*,
-          w.id as wallet_id,
-          w.user_id
+          c.*
         FROM rwa_contracts c
-        JOIN wallets w ON c.wallet_id = w.id
         WHERE 
           c.status = 'active'
           AND c.a2a_enabled = TRUE
-          AND c.payment_type = 'recurring'
-          AND c.frequency IS NOT NULL
-          AND c.frequency != 'one-time'
+          AND c.payment_type IN ('recurring', 'monthly', 'quarterly', 'annual')
           AND (
             c.last_payment_date IS NULL
             OR c.next_payment_date <= NOW()
           )
-        ORDER BY c.next_payment_date ASC
+        ORDER BY c.next_payment_date ASC NULLS FIRST
         LIMIT 50
       `;
 
@@ -78,21 +73,36 @@ class PaymentSchedulerService {
    * Process payment for a specific contract
    */
   private async processContractPayment(contract: any): Promise<void> {
-    logger.info(`💳 Processing payment for contract: ${contract.title} (${contract.id})`);
+    logger.info(`💳 Processing payment for contract: ${contract.asset_description} (${contract.id})`);
 
     try {
       // Parse contract terms
-      const contractTerms = typeof contract.terms === 'string' 
-        ? JSON.parse(contract.terms) 
-        : contract.terms;
+      const contractTerms = typeof contract.raw_contract_text === 'string' 
+        ? JSON.parse(contract.raw_contract_text) 
+        : contract.raw_contract_text || {};
+
+      // Determine payer and payee based on contract type
+      const isRequestContract = contract.payer_id === null && contract.payee_id !== null;
+      
+      let fromUserId, toWalletAddress;
+      
+      if (isRequestContract) {
+        // Request contract: payee (landlord) requests from payer (tenant)
+        fromUserId = contract.payee_id; // Landlord user ID
+        toWalletAddress = contractTerms.counterparty_address; // Tenant wallet
+      } else {
+        // Regular contract: payer pays to payee
+        fromUserId = contract.payer_id;
+        toWalletAddress = contractTerms.counterparty_address || contractTerms.recipientAddress || '';
+      }
 
       // Create payment request
       const paymentRequest = {
-        amount: contract.amount.toString(),
-        fromAddress: contract.wallet_id, // The payer's wallet
-        toAddress: contractTerms.counterpartyAddress || contractTerms.recipientAddress || '',
+        amount: contract.total_amount_usdc.toString(),
+        fromAddress: fromUserId, // User ID (will be resolved to wallet)
+        toAddress: toWalletAddress, // Wallet address
         network: contractTerms.network || 'ARC-TESTNET',
-        description: `Automated ${contract.frequency} payment for ${contract.title}`,
+        description: `Automated ${contract.payment_type} payment for ${contract.asset_description}`,
         requestedAt: new Date()
       };
 
@@ -226,15 +236,15 @@ class PaymentSchedulerService {
 
       const values = [
         contract.id,
-        paymentRequest.fromAddress,
-        paymentRequest.toAddress,
+        paymentRequest.fromAddress, // User ID
+        paymentRequest.toAddress, // Wallet address
         paymentRequest.amount,
         paymentRequest.network,
         paymentRequest.description,
         agentDecision ? (agentDecision.approved ? 'approved' : 'rejected') : 'pending',
         JSON.stringify({}), // payment_requirements
         agentDecision ? JSON.stringify(agentDecision) : null,
-        contract.title
+        contract.asset_description || contract.title
       ];
 
       const result = await query(insertQuery, values);

@@ -36,15 +36,26 @@ const A2ARequests: React.FC = () => {
     try {
       setLoading(true);
       
+      console.log('🔍 Fetching A2A requests...');
+      
       // Fetch real A2A requests from backend
       const response = await a2aAPI.getRequests(undefined, 50);
       
+      console.log('📦 API Response:', response);
+      console.log('📋 Requests:', response.requests);
+      
       if (response.success) {
-        setRequests(response.requests || []);
+        const allRequests = response.requests || [];
+        console.log(`✅ Found ${allRequests.length} total requests`);
+        setRequests(allRequests);
+      } else {
+        console.error('❌ API returned success: false');
+        toast.error('Failed to load requests');
       }
     } catch (error: any) {
-      console.error('Failed to fetch A2A requests:', error);
-      toast.error('Failed to load A2A requests');
+      console.error('❌ Failed to fetch A2A requests:', error);
+      console.error('Error details:', error.response?.data);
+      toast.error('Failed to load A2A requests: ' + (error.response?.data?.error || error.message));
     } finally {
       setLoading(false);
     }
@@ -64,35 +75,72 @@ const A2ARequests: React.FC = () => {
 
   const handleApproveRequest = async (requestId: string) => {
     try {
-      const token = localStorage.getItem('token');
       const request = requests.find(r => r.id === requestId);
       
-      if (!request) return;
+      if (!request) {
+        toast.error('Request not found');
+        return;
+      }
 
-      const response = await fetch('http://localhost:3000/api/a2a/process', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          paymentRequest: request.payment_requirements,
-          walletId: request.from_agent_wallet_id,
-          autoApprove: true
-        })
+      toast.info('🤖 AI Agent evaluating payment...');
+
+      // Step 1: Call agent decision endpoint
+      const decisionResponse = await a2aAPI.agentDecide(request.contract_id, {
+        amount: request.amount,
+        fromAddress: request.from_agent_wallet_id,
+        toAddress: request.to_agent_wallet_address,
+        network: request.network,
+        description: request.description,
+        requestedAt: new Date(request.created_at)
       });
 
-      const data = await response.json();
-      
-      if (data.success) {
-        alert('✅ Payment processed successfully!');
-        fetchA2ARequests();
-      } else {
-        alert('❌ Payment failed: ' + data.error);
+      console.log('🤖 Agent Decision:', decisionResponse);
+
+      if (!decisionResponse.success) {
+        toast.error('Agent decision failed: ' + decisionResponse.error);
+        return;
       }
-    } catch (error) {
+
+      const decision = decisionResponse.decision;
+
+      // Step 2: Show agent reasoning to user
+      if (decision.approved) {
+        toast.success(`✅ Agent Approved!\n\n${decision.reasoning}`, { duration: 5000 });
+        
+        // Step 3: Execute payment
+        toast.info('💸 Executing payment...');
+        
+        try {
+          const paymentResponse = await a2aAPI.executePayment(requestId);
+          
+          if (paymentResponse.success) {
+            toast.success('✅ Payment executed successfully!', { duration: 5000 });
+          } else {
+            toast.error('Payment execution failed: ' + paymentResponse.error);
+          }
+        } catch (paymentError: any) {
+          console.error('Payment execution failed:', paymentError);
+          toast.error('Payment execution failed: ' + (paymentError.response?.data?.error || paymentError.message));
+        }
+        
+        // Refresh requests to show updated status
+        setTimeout(() => {
+          fetchA2ARequests();
+          fetchActivityLog();
+        }, 2000);
+      } else {
+        toast.error(`❌ Agent Rejected!\n\n${decision.reasoning}`, { duration: 5000 });
+        
+        // Refresh to show rejected status
+        setTimeout(() => {
+          fetchA2ARequests();
+          fetchActivityLog();
+        }, 2000);
+      }
+      
+    } catch (error: any) {
       console.error('Failed to process payment:', error);
-      alert('❌ Failed to process payment');
+      toast.error('Failed to process payment: ' + (error.response?.data?.error || error.message));
     }
   };
 
@@ -100,6 +148,29 @@ const A2ARequests: React.FC = () => {
     // TODO: Implement reject functionality
     alert('Request rejected');
     fetchA2ARequests();
+  };
+
+  const handleExecutePayment = async (requestId: string) => {
+    try {
+      toast.info('💸 Executing payment...');
+      
+      const paymentResponse = await a2aAPI.executePayment(requestId);
+      
+      if (paymentResponse.success) {
+        toast.success('✅ Payment executed successfully!', { duration: 5000 });
+        
+        // Refresh requests to show updated status
+        setTimeout(() => {
+          fetchA2ARequests();
+          fetchActivityLog();
+        }, 2000);
+      } else {
+        toast.error('Payment execution failed: ' + paymentResponse.error);
+      }
+    } catch (error: any) {
+      console.error('Payment execution failed:', error);
+      toast.error('Payment execution failed: ' + (error.response?.data?.error || error.message));
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -289,6 +360,19 @@ const A2ARequests: React.FC = () => {
                             </button>
                           </div>
                         )}
+                        
+                        {/* Manual Approval - Execute Payment Button */}
+                        {request.status === 'approved' && (
+                          <div className="flex gap-2 ml-4">
+                            <button
+                              onClick={() => handleExecutePayment(request.id)}
+                              className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition flex items-center gap-2"
+                            >
+                              <span>💸</span>
+                              <span>Execute Payment</span>
+                            </button>
+                          </div>
+                        )}
                       </div>
 
                       {/* Payment Details */}
@@ -379,90 +463,23 @@ const A2ARequests: React.FC = () => {
                   Scheduled Payments
                 </h2>
 
-                {/* Mock Upcoming Payments */}
-                <div className="space-y-4">
-                  {/* Example Scheduled Payment */}
-                  <div className="border rounded-lg p-5 hover:border-blue-400 transition">
-                    <div className="flex items-start justify-between mb-3">
-                      <div>
-                        <h3 className="font-semibold text-lg">Monthly Rent Payment</h3>
-                        <p className="text-sm text-muted-foreground">Rent Contract #123</p>
-                      </div>
-                      <span className="px-3 py-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100 rounded-full text-sm font-medium">
-                        Auto-Approved
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-4 mb-4">
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-1">Amount</p>
-                        <p className="font-bold text-lg">$500 USDC</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-1">Due Date</p>
-                        <p className="font-semibold">Feb 1, 2025</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-1">Network</p>
-                        <p className="font-semibold">Arc Testnet</p>
-                      </div>
-                    </div>
-
-                    <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded p-3">
-                      <p className="text-xs text-green-700 dark:text-green-400">
-                        🤖 <strong>Agent will auto-process on Feb 1, 2025 at 12:00 AM UTC</strong>
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="border rounded-lg p-5 hover:border-blue-400 transition">
-                    <div className="flex items-start justify-between mb-3">
-                      <div>
-                        <h3 className="font-semibold text-lg">Monthly Rent Payment</h3>
-                        <p className="text-sm text-muted-foreground">Rent Contract #123</p>
-                      </div>
-                      <span className="px-3 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100 rounded-full text-sm font-medium">
-                        Pending Review
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-4 mb-4">
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-1">Amount</p>
-                        <p className="font-bold text-lg">$500 USDC</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-1">Due Date</p>
-                        <p className="font-semibold">Mar 1, 2025</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-1">Network</p>
-                        <p className="font-semibold">Arc Testnet</p>
-                      </div>
-                    </div>
-
-                    <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded p-3">
-                      <p className="text-xs text-blue-700 dark:text-blue-400">
-                        👤 <strong>Requires manual approval before execution</strong>
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Empty State if no upcoming payments */}
-                {/* <div className="text-center py-12">
-                  <div className="text-6xl mb-4">⏰</div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">No Scheduled Payments</h3>
-                  <p className="text-gray-600 mb-6">
-                    Enable A2A on your contracts to see upcoming automated payments
+                {/* Empty State - Real data would come from scheduler */}
+                <div className="text-center py-12">
+                  <div className="text-6xl mb-4">📅</div>
+                  <h3 className="text-xl font-semibold mb-2">No Scheduled Payments</h3>
+                  <p className="text-muted-foreground mb-6">
+                    Upcoming recurring payments will appear here when scheduled by the payment processor
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    The automated scheduler checks for due payments every 5 minutes
                   </p>
                   <button
                     onClick={() => navigate('/contracts')}
-                    className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
+                    className="mt-4 px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition"
                   >
                     Go to Contracts
                   </button>
-                </div> */}
+                </div>
               </div>
             )}
           </>

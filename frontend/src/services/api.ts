@@ -399,8 +399,54 @@ export const a2aAPI = {
   getStatus: async (paymentId: string) => {
     const response = await api.get(`/a2a/status/${paymentId}`);
     return response.data;
+  },
+
+  // Execute payment manually for an approved request
+  executePayment: async (requestId: string) => {
+    const response = await api.post(`/a2a/execute-payment/${requestId}`);
+    return response.data;
+  }
+};
+
+// =====================
+// REQUEST CENTER API
+// For users acting as REQUESTERS (sending payment requests)
+// =====================
+export const requestCenterAPI = {
+  // Get all request contracts (where user is payee/requester)
+  getContracts: async () => {
+    const response = await api.get('/request-center/contracts');
+    return response.data;
+  },
+
+  // Get single request contract
+  getContract: async (contractId: string) => {
+    const response = await api.get(`/request-center/contracts/${contractId}`);
+    return response.data;
+  },
+
+  // Send payment request for a contract
+  sendRequest: async (contractId: string, data?: { amount?: string; description?: string }) => {
+    const response = await api.post(`/request-center/send-request/${contractId}`, data || {});
+    return response.data;
+  },
+
+  // Get all sent requests
+  getSentRequests: async (limit?: number) => {
+    const params = new URLSearchParams();
+    if (limit) params.append('limit', limit.toString());
+    
+    const response = await api.get(`/request-center/sent-requests?${params.toString()}`);
+    return response.data;
+  },
+
+  // Get single sent request
+  getSentRequest: async (requestId: string) => {
+    const response = await api.get(`/request-center/sent-requests/${requestId}`);
+    return response.data;
   }
 };
 
 export default api;
+
 

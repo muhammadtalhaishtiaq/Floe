@@ -22,6 +22,7 @@ import recipientRoutes from './routes/recipient.routes';
 import apiKeysRoutes from './routes/api-keys.routes';
 import voiceRoutes from './routes/voice.routes';
 import a2aRoutes from './routes/a2a.routes'; // 🤖 A2A Agent-to-Agent payments
+import requestCenterRoutes from './routes/request-center.routes'; // 🔔 Request Center for requesters
 
 // Import middleware
 import { errorHandler } from './middleware/error.middleware';
@@ -101,6 +102,7 @@ app.use('/api/recipients', recipientRoutes);
 app.use('/api/api-keys', apiKeysRoutes);
 app.use('/api/voice', voiceRoutes);
 app.use('/api/a2a', a2aRoutes); // 🤖 A2A Agent-to-Agent payments
+app.use('/api/request-center', requestCenterRoutes); // 🔔 Request Center
 
 // 404 handler
 app.use((req: Request, res: Response) => {
@@ -147,9 +149,10 @@ const startServer = async () => {
     logger.info('🤖 Starting automated payment processor...');
     startPaymentProcessor();
     
-    // Start A2A payment scheduler (new - checks for A2A-enabled contracts)
-    PaymentSchedulerService.start(5); // Check every 5 minutes
-    logger.info('🤖 A2A Payment Scheduler started');
+    // Start A2A payment scheduler (DISABLED - table schema mismatch)
+    // PaymentSchedulerService.start(5); // Check every 5 minutes
+    // logger.info('🤖 A2A Payment Scheduler started');
+    logger.info('⏸️ A2A Payment Scheduler disabled (manual testing mode)');
     
     // Start Express server
     app.listen(PORT, () => {

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { 
   TrendingUp, FileText, CreditCard, Wallet, 
-  Settings, LogOut, Users, Bot
+  Settings, LogOut, Users, Bot, Bell
 } from "lucide-react";
 import Logo from "@/components/Logo";
 import { useAuth } from "@/contexts/AuthContext";
@@ -47,6 +47,7 @@ const AppSidebar = () => {
     { path: "/payments", label: "Payments", icon: CreditCard },
     { path: "/wallets", label: "Wallets", icon: Wallet },
     { path: "/a2a", label: "A2A Payments", icon: Bot, badge: a2aBadgeCount }, // DYNAMIC badge
+    { path: "/request-center", label: "Request Center", icon: Bell }, // NEW: Request Center
     { path: "/recipients", label: "Recipients", icon: Users },
     { path: "/settings", label: "Settings", icon: Settings },
   ];

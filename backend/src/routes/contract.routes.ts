@@ -24,7 +24,8 @@ router.post('/register', asyncHandler(async (req, res) => {
     payment_frequency,
     payment_day_of_month,
     start_date,
-    end_date
+    end_date,
+    is_request_contract // NEW: Flag to indicate this is a request contract
   } = req.body;
 
   // Get user ID from JWT token (from auth middleware)
@@ -35,6 +36,7 @@ router.post('/register', asyncHandler(async (req, res) => {
   }
 
   logger.info(`💰 POST /api/contracts/register - Creating contract for userId: ${userId}`);
+  logger.info(`📋 Is Request Contract: ${is_request_contract}`);
   logger.info(`📅 Received dates:`, {
     start_date,
     end_date,
@@ -74,16 +76,28 @@ router.post('/register', asyncHandler(async (req, res) => {
 
   const nextPaymentDate = calculateNextPayment(start_date, payment_frequency, payment_day_of_month);
 
+  // For request contracts, current user is PAYEE (receiver)
+  // For regular contracts, current user is PAYER
+  const payerId = is_request_contract ? null : userId;
+  const payeeId = is_request_contract ? userId : null;
+
+  logger.info(`👥 Contract roles:`, {
+    payer_id: payerId,
+    payee_id: payeeId,
+    is_request: is_request_contract
+  });
+
   const result = await query(`
     INSERT INTO rwa_contracts (
-      contract_type, payer_id, asset_description,
+      contract_type, payer_id, payee_id, asset_description,
       total_amount_usdc, payment_type, 
       raw_contract_text, status, start_date, end_date, created_at, updated_at
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
     RETURNING *
   `, [
     contract_type,
-    userId, // This is the payer (person creating the contract)
+    payerId, // NULL for request contracts
+    payeeId, // Current user for request contracts, NULL for regular
     `${contract_name} - ${counterparty_name} - ${description || 'No description'}`,
     amount_usdc,
     payment_frequency, // one_time, monthly, etc.
@@ -93,7 +107,8 @@ router.post('/register', asyncHandler(async (req, res) => {
       counterparty_address,
       payment_day_of_month: payment_day_of_month || null,
       start_date,
-      end_date: end_date || null
+      end_date: end_date || null,
+      is_request_contract: is_request_contract || false
     }),
     'active',
     start_date,

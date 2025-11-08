@@ -19,6 +19,10 @@ import Wallets from "./pages/Wallets";
 import Recipients from "./pages/Recipients";
 import SettingsPage from "./pages/SettingsPage";
 import A2ARequests from "./pages/A2ARequests"; // 🤖 A2A Agent-to-Agent payments
+import RequestContracts from "./pages/RequestContracts"; // 🔔 Request Center
+import RequestContractNew from "./pages/RequestContractNew"; // 🔔 Create Request Contract
+import RequestContractDetail from "./pages/RequestContractDetail"; // 🔔 Request Contract Detail
+import SentRequests from "./pages/SentRequests"; // 📤 Sent Requests
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -47,6 +51,11 @@ const App = () => (
             <Route path="/wallets" element={<ProtectedRoute><Wallets /></ProtectedRoute>} />
             <Route path="/recipients" element={<ProtectedRoute><Recipients /></ProtectedRoute>} />
             <Route path="/a2a" element={<ProtectedRoute><A2ARequests /></ProtectedRoute>} />
+            <Route path="/request-center" element={<ProtectedRoute><RequestContracts /></ProtectedRoute>} />
+            <Route path="/request-center/contracts" element={<ProtectedRoute><RequestContracts /></ProtectedRoute>} />
+            <Route path="/request-center/contracts/new" element={<ProtectedRoute><RequestContractNew /></ProtectedRoute>} />
+            <Route path="/request-center/contracts/:id" element={<ProtectedRoute><RequestContractDetail /></ProtectedRoute>} />
+            <Route path="/request-center/sent-requests" element={<ProtectedRoute><SentRequests /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
             
             {/* 404 catch-all */}
