@@ -1,345 +1,169 @@
-# 🌊 Floe - Smooth Payment Automation for Real-World Assets
+# 🌊 Floe
 
-> **Built for the AI Agents on Arc with USDC Hackathon**
+**Voice-controlled autonomous payments on Arc Testnet**
 
-Floe automates recurring, conditional, and milestone-based USDC payments for tokenized real-world assets on Arc blockchain. Upload a lease, invoice, or bond contract — our AI reads it, creates payment schedules, and executes transfers automatically using Circle wallets.
-
-**Smooth flow. Zero friction. Effortless automation.**
+Live demo: https://floe.onrender.com
 
 ---
 
-## 🎯 Problem We Solve
+## What is Floe?
 
-Traditional RWA payments (rent, supply chain, treasury yields) are:
-- ❌ Manual and error-prone
-- ❌ Slow (2-5 business days)
-- ❌ Expensive (2-5% fees)
-- ❌ Lack transparency
+Floe makes blockchain payments actually autonomous. Think of it as having an AI assistant that handles your recurring payments, approves requests based on contract terms, and executes everything automatically using Circle USDC on Arc Testnet.
 
-## ✨ Our Solution
+We built this for the Arc Testnet Hackathon to show what's possible when you combine AI agents with real payment infrastructure.
 
-- ✅ **AI Contract Parser** - Reads natural language contracts
-- ✅ **Automated Scheduling** - CRON-based recurring payments
-- ✅ **Conditional Logic** - Evidence-based payment releases
-- ✅ **Instant Settlement** - USDC on Arc blockchain (sub-second)
-- ✅ **Complete Transparency** - On-chain audit trails
+## The Problem
 
----
+Right now, even on blockchain, payments require manual work:
+- Someone has to approve every transaction
+- Cross-chain transfers are painful
+- No smart payment logic (just send/receive)
+- Real-world stuff like rent payments? Forget automation.
 
-## 🚀 Use Cases
+## What We Built
 
-1. **🏠 Automated Rent** - Monthly payments for tokenized properties
-2. **📦 Supply Chain** - Conditional payments on delivery confirmation
-3. **💰 Treasury Bonds** - Scheduled quarterly yield distributions
-4. **🏗️ Construction** - Milestone-based contractor payments
-5. **⚙️ Equipment Leasing** - Performance-based SLA payments
+**A2A (Agent-to-Agent) Payments**
+AI agents that evaluate payment requests and execute them automatically. Example: landlord sends a rent request, tenant's AI agent checks the contract, verifies wallet balance, and pays on the due date. Zero human clicks.
 
----
+**Voice AI Control**
+Talk to your payment system. "Show my wallets" → it navigates. "Send payment" → it executes. Uses Cloudflare Whisper for speech-to-text and ElevenLabs for responses.
 
-## 🛠️ Tech Stack
+**CCTP Cross-Chain**
+Move USDC between Arc, Base, and Polygon seamlessly. Native Circle implementation, no bridges or wrapped tokens.
 
-- **Frontend:** Vite + React 18 + TypeScript + Tailwind CSS + Radix UI
-- **Backend:** Node.js + Express + PostgreSQL
-- **AI Agent:** Cloudflare Workers AI (LLaMA 3)
-- **Payments:** Circle Developer-Controlled Wallets SDK
-- **Blockchain:** Arc EVM Testnet (USDC as gas)
-- **Scheduler:** Node-cron for recurring payments
+**Request Center**
+Be the landlord or service provider. Create contracts to receive payments, enable A2A mode, send requests. Your customers' AI agents handle the rest.
 
----
+## Tech Stack
 
-## 📦 Prerequisites
+- **Arc Testnet** - Primary blockchain
+- **Circle USDC + SDK** - All payments use real USDC and Circle's Web3 Services SDK
+- **Cloudflare AI** - LLaMA 3 for agent decisions, Whisper for voice
+- **ElevenLabs** - Text-to-speech for voice assistant
+- **Node.js + React** - Backend and frontend
+- **PostgreSQL** - Database
 
-- Node.js 18+ and npm
-- PostgreSQL 14+ (or Docker)
-- Circle Developer Account ([Sign up](https://console.circle.com/))
-- Cloudflare Workers Account (optional, for AI features)
+## Quick Start
 
----
+**Prerequisites:**
+- Node.js 18+
+- PostgreSQL (or use Supabase free tier)
+- Circle API keys (get from console.circle.com)
 
-## 🏗️ Project Structure
-
-```
-floe/
-├── backend/              # Node.js + Express API
-│   ├── src/
-│   │   ├── routes/       # API endpoints (auth, wallet, contract, payment)
-│   │   ├── services/     # Business logic (Circle SDK, CRON)
-│   │   ├── middleware/   # Auth, validation, error handling
-│   │   ├── config/       # Configuration files
-│   │   └── utils/        # Helper functions
-│   └── tests/            # Backend tests
-├── frontend/             # Vite + React dashboard
-│   ├── src/
-│   │   ├── pages/        # Page components (login, dashboard, contracts)
-│   │   ├── components/   # UI components (buttons, cards, forms)
-│   │   ├── contexts/     # Auth context
-│   │   ├── services/     # API client (Axios)
-│   │   └── lib/          # Utilities
-│   └── public/           # Static assets
-├── workers/              # Cloudflare Workers (AI Agent)
-├── database/             # SQL schema and seed data
-└── docs/                 # Documentation
-```
-
----
-
-## 🚀 Quick Start
-
-See **[RUN.md](./RUN.md)** for detailed step-by-step instructions!
-
-### 1. Install Dependencies
-
+**Install:**
 ```bash
-# Backend
-cd backend && npm install && cd ..
-
-# Frontend
-cd frontend && npm install && cd ..
-```
-
-### 2. Setup Database with Test Data
-
-**RECOMMENDED: Use Supabase (Free, Managed PostgreSQL)** 🚀
-
-```bash
-# See SUPABASE_SETUP.md for detailed guide
-# Quick steps:
-# 1. Create account at https://supabase.com
-# 2. Create new project, save password
-# 3. Get connection string from Settings > Database
-# 4. Run setup script:
-
-cd database
 npm install
-node setup-supabase.js "postgresql://postgres:YOUR_PASS@db.xxx.supabase.co:5432/postgres"
+cd backend && npm install
+cd ../frontend && npm install
 ```
 
-**Alternative: Local PostgreSQL with Docker**
-
+**Setup database:**
 ```bash
-# Start PostgreSQL
-docker run --name floe-db -e POSTGRES_PASSWORD=password -p 5432:5432 -d postgres:14
-
-# Create database
-docker exec -i floe-db psql -U postgres -c "CREATE DATABASE paymind_rwa"
-
-# Load schema
-docker exec -i floe-db psql -U postgres -d paymind_rwa < database/schema.sql
-
-# Load test data (5 users, 6 contracts, 9 transactions!)
-docker exec -i floe-db psql -U postgres -d paymind_rwa < database/seed.sql
+# Run the schema
+psql -d your_database < database/schema.sql
 ```
 
-### 3. Create .env File
-
-```bash
-CIRCLE_API_KEY=your_circle_api_key
-CIRCLE_ENTITY_SECRET=your_circle_entity_secret
-DATABASE_URL=postgresql://postgres:password@localhost:5432/paymind_rwa
-BLOCKCHAIN_NETWORK=ETH-SEPOLIA
-NODE_ENV=development
+**Environment variables:**
+Create a `.env` file in the root:
+```
+CIRCLE_API_KEY=your_key
+CIRCLE_ENTITY_SECRET=your_secret
+DATABASE_URL=postgresql://...
 PORT=3000
-FRONTEND_URL=http://localhost:8080
 ```
 
-Full template in **[RUN.md](./RUN.md)**!
-
-### 4. Start Everything
-
+**Run it:**
 ```bash
 # Terminal 1 - Backend
 cd backend && npm run dev
 
-# Terminal 2 - Frontend
+# Terminal 2 - Frontend  
 cd frontend && npm run dev
 ```
 
-### 5. Test It!
+Open http://localhost:8080
 
-- Open: **http://localhost:8080**
-- Login: `demo@floe.io` / `demo123` (or click "Use Demo Account")
-- See 6 contracts, payment schedules, and transactions!
+## Key Features
 
----
+**Smart Contracts**
+Create payment contracts with schedules, amounts, and conditions. Works for rent, subscriptions, invoices, whatever.
 
-## 🎨 Features
+**Multi-Wallet**
+Manage USDC wallets on Arc, Base, and Polygon. Switch networks, transfer between them.
 
-### ✅ Complete Authentication
-- Login / Signup pages
-- JWT-based auth
-- Demo account ready
+**A2A Manual Mode**
+AI agent evaluates the request, you click to execute. Good for when you want the AI's analysis but final control.
 
-### ✅ Dashboard
-- 4 stat cards (contracts, payments, amounts)
-- Upcoming payments list
-- Recent transactions
-- Beautiful gradient UI
+**A2A Auto Mode**
+Full autonomous. Agent evaluates and executes. Set it once, forget it.
 
-### ✅ Contract Management
-- List all RWA contracts
-- Filter by status
-- Create new contracts
-- AI contract text parser
+**Voice Assistant**
+Floating bubble on every page. Click, speak, it responds and navigates. Feels futuristic because it is.
 
-### ✅ Payment Automation
-- Recurring payments (monthly, quarterly)
-- Conditional payments (on delivery)
-- Milestone payments (construction)
-- CRON scheduler
+**Real-Time Polling**
+Transaction status updates automatically. No refreshing needed.
 
-### ✅ Test Data Included
-- 5 user accounts
-- 6 sample contracts (rent, supply chain, bonds, construction, leasing)
-- 9 transaction records
-- 5 tokenized assets
+## Project Structure
 
----
-
-## 📚 Documentation
-
-- **[HACKATHON_MASTER_PLAN.md](./HACKATHON_MASTER_PLAN.md)** - 🔥 **COMPLETE HACKATHON GUIDE** (25 sections, A-Z)
-  - Everything you need to win the hackathon!
-  - Day-by-day build plan
-  - Demo script & submission guide
-  - Troubleshooting & best practices
-- **[RUN.md](./RUN.md)** - Quick start guide (if you just want to run the project)
-
----
-
-## 🔑 Key Code Examples
-
-### AI Contract Parser
-```typescript
-// Upload contract text
-const contract = "Apartment 405. Rent: $1200 USD. Due: 1st of every month.";
-
-// AI extracts payment logic
-{
-  amount: 1200,
-  currency: "USD",
-  frequency: "monthly",
-  due_day: 1
-}
+```
+arc-project/
+├── backend/          # Node.js API
+│   ├── routes/       # All API endpoints
+│   ├── services/     # Circle SDK, AI agents, payments
+│   └── middleware/   # Auth, validation
+├── frontend/         # React app
+│   ├── pages/        # All screens
+│   └── components/   # UI components + AI assistants
+├── workers/          # Cloudflare Worker for AI
+└── database/         # SQL schema
 ```
 
-### Automated Scheduling
-```typescript
-// CRON checks for due payments daily at midnight
-cron.schedule('0 0 * * *', () => {
-  checkAndExecuteScheduledPayments();
-});
-```
+## Demo Flow
 
-### Circle Wallet Integration
-```typescript
-// Create payment with Circle SDK
-const payment = await circleClient.createPayment({
-  source: { type: 'wallet', id: payerWalletId },
-  destination: { type: 'blockchain', address: '0x...' },
-  amount: { amount: '1200.00', currency: 'USD' },
-  blockchain: 'ARC-TESTNET'  // or ETH-SEPOLIA for testing
-});
-```
+1. Create a wallet on Arc Testnet
+2. Get some USDC from Circle faucet
+3. Go to Request Center → Create a rent request contract
+4. Enable A2A payments (auto mode)
+5. Send request to yourself (or another wallet)
+6. Watch the AI agent evaluate and execute
+7. Try voice commands: "Show my wallets", "Create a contract"
 
----
+## Hackathon Context
 
-## 🧪 Testing
+Built for the **AI Agents on Arc with USDC** hackathon (Oct 27 - Nov 9, 2024).
 
-```bash
-# Test Circle integration
-cd backend && npm run test:circle
+We focused on:
+- Real autonomous payments (not just demos)
+- Circle's full stack (USDC, SDK, CCTP)
+- Voice AI (because why not make payments conversational)
+- Arc Testnet native (USDC as gas is amazing)
 
-# Run all tests
-npm test
+## Why This Matters
 
-# Backend tests
-cd backend && npm test
+Autonomous payments unlock real use cases:
+- Property management companies can automate rent collection
+- Businesses can set payment terms once, let AI handle execution
+- Cross-border payments become instant and cheap
+- Voice control makes crypto accessible to non-technical users
 
-# Frontend tests
-cd frontend && npm test
-```
+We're not just moving tokens around. We're building infrastructure for how real-world payments should work.
 
----
+## Deployment
 
-## 🚀 Deployment
+Live on Render: https://floe.onrender.com
 
-### Frontend (Vercel)
-```bash
-cd frontend
-npm run build
-vercel --prod
-```
+(First load might take 30 seconds - free tier cold starts)
 
-### Backend (Railway / Render)
-```bash
-cd backend
-npm run build
-# Deploy via Railway CLI or connect GitHub repo
-```
+## Contributing
 
-### Cloudflare Workers (AI Agent)
-```bash
-cd workers
-wrangler login
-wrangler deploy
-```
+This was built in a hackathon sprint. Code isn't perfect. If you want to improve something, PRs welcome.
+
+## License
+
+MIT
 
 ---
 
-## 🏆 Hackathon Submission
+Built with ☕ for the Arc Testnet Hackathon
 
-- **Event:** AI Agents on Arc with USDC
-- **Track:** Payments for Real-World Assets (RWA)
-- **Dates:** October 27 - November 9, 2025
-- **Submission:** November 8, 2025
-
-### What Makes Floe Stand Out
-
-✅ **RWA Track Focus** - Underserved vs DeFi/tipping  
-✅ **Multiple Payment Types** - Recurring + Conditional + Milestone  
-✅ **AI Innovation** - Natural language contract parser  
-✅ **Complete Implementation** - Not mockups, real working code  
-✅ **5 Use Cases** - Shows versatility and business value  
-✅ **Enterprise Ready** - B2B positioning with audit trails  
-
----
-
-## 📄 License
-
-MIT License - see [LICENSE](./LICENSE) file
-
----
-
-## 🤝 Contributing
-
-This project was built for a hackathon. Post-hackathon contributions welcome:
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
----
-
-## 📞 Contact
-
-- **GitHub:** [github.com/your-team/floe](https://github.com/your-team/floe)
-- **Demo:** [floe.vercel.app](https://floe.vercel.app) (coming soon)
-- **Email:** team@floe.io
-
----
-
-## 🙏 Acknowledgments
-
-- **Circle** - For USDC infrastructure and Arc blockchain
-- **Cloudflare** - For Workers AI platform
-- **lablab.ai** - For hosting the hackathon
-- **Our mentors** - For guidance and support
-
----
-
-**Built with ❤️ for the AI Agents on Arc with USDC Hackathon**
-
-## 🌊 *Floe - Where payments flow smoothly* 🚀
-"# Floe" 
+**Try it:** https://floe.onrender.com
