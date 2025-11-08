@@ -20,6 +20,7 @@ router.post('/register', asyncHandler(async (req, res) => {
     description,
     counterparty_name,
     counterparty_address,
+    receiver_wallet_address, // NEW: Landlord's wallet to receive money
     amount_usdc,
     payment_frequency,
     payment_day_of_month,
@@ -105,6 +106,7 @@ router.post('/register', asyncHandler(async (req, res) => {
       contract_name,
       counterparty_name,
       counterparty_address,
+      receiver_wallet_address: receiver_wallet_address || null, // NEW: Store receiver wallet
       payment_day_of_month: payment_day_of_month || null,
       start_date,
       end_date: end_date || null,

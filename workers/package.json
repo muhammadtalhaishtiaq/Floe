@@ -1,7 +1,7 @@
 {
-  "name": "paymind-rwa-ai-agent",
+  "name": "floe-rwa-ai-agent",
   "version": "1.0.0",
-  "description": "AI Agent for PayMind RWA - Contract parsing and condition evaluation",
+  "description": "AI Agent for Floe RWA - Contract parsing and condition evaluation",
   "main": "src/index.ts",
   "scripts": {
     "dev": "wrangler dev",
@@ -10,7 +10,7 @@
     "deploy:production": "wrangler deploy --env production"
   },
   "keywords": ["cloudflare", "workers", "ai", "llm"],
-  "author": "PayMind Team",
+  "author": "Floe Team",
   "license": "MIT",
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20231218.0",

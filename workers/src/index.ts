@@ -1,5 +1,5 @@
 /**
- * PayMind RWA AI Agent - Cloudflare Workers
+ * Floe RWA AI Agent - Cloudflare Workers
  * 
  * This AI agent handles:
  * 1. Contract parsing (extract payment terms from natural language)
@@ -59,7 +59,7 @@ export default {
       // Default route
       return Response.json(
         {
-          name: 'PayMind RWA AI Agent',
+          name: 'Floe RWA AI Agent',
           version: '1.0.0',
           endpoints: [
             'POST /parse - Parse contract text',

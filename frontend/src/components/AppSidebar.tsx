@@ -20,9 +20,17 @@ const AppSidebar = () => {
   useEffect(() => {
     const fetchA2APending = async () => {
       try {
-        const response = await a2aAPI.getRequests('pending', 100);
-        const pendingCount = response.requests?.filter((r: any) => r.status === 'pending').length || 0;
-        setA2ABadgeCount(pendingCount);
+        const currentUserId = localStorage.getItem('userId');
+        const response = await a2aAPI.getRequests(undefined, 100);
+        
+        // Only count INCOMING requests (where YOU are the payer)
+        const incomingPending = response.requests?.filter((r: any) => {
+          const isPayer = (r as any).payer_id === currentUserId;
+          const isPending = r.status === 'pending' || r.status === 'approved';
+          return isPayer && isPending;
+        }).length || 0;
+        
+        setA2ABadgeCount(incomingPending);
       } catch (error) {
         console.log('Could not fetch A2A badge count');
       }

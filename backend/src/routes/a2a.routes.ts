@@ -768,6 +768,11 @@ router.post('/execute-payment/:requestId', authenticateToken, async (req: Reques
     logger.info(`📋 Request found: ${request.description}`);
     logger.info(`   Status: ${request.status}`);
     logger.info(`   Amount: ${request.amount} USDC`);
+    logger.info(`🔍 Request data from DB:`);
+    logger.info(`   from_agent_wallet_id: ${request.from_agent_wallet_id} (PAYEE/LANDLORD user ID)`);
+    logger.info(`   to_agent_wallet_address: ${request.to_agent_wallet_address} (PAYER/TENANT wallet)`);
+    logger.info(`   contract_payer_id: ${request.contract_payer_id}`);
+    logger.info(`   contract_payee_id: ${request.contract_payee_id}`);
 
     // Check if request is ready for execution (pending or approved)
     if (request.status !== 'pending' && request.status !== 'approved') {
@@ -780,8 +785,14 @@ router.post('/execute-payment/:requestId', authenticateToken, async (req: Reques
 
     logger.info(`✅ Status check passed - proceeding with payment execution`);
 
+    logger.info(`\n🎯 === WALLET RESOLUTION LOGIC === `);
+    logger.info(`GOAL: Money should go FROM tenant TO landlord`);
+    logger.info(`   TENANT (payer): ${request.to_agent_wallet_address}`);
+    logger.info(`   LANDLORD (payee): User ID ${request.from_agent_wallet_id}`);
+
     // Find payer's wallet by address
-    logger.info(`🔍 Looking for payer wallet: ${request.to_agent_wallet_address}`);
+    logger.info(`\n🔍 Step 1: Looking for TENANT's (payer) wallet by address...`);
+    logger.info(`   Searching for: ${request.to_agent_wallet_address}`);
     const walletResult = await query(
       `SELECT * FROM user_wallets WHERE circle_wallet_address = $1`,
       [request.to_agent_wallet_address]
@@ -799,32 +810,79 @@ router.post('/execute-payment/:requestId', authenticateToken, async (req: Reques
 
     const payerWallet = walletResult.rows[0];
     
-    logger.info(`📋 Payer wallet details:`);
-    logger.info(`   ID: ${payerWallet.id}`);
+    logger.info(`✅ TENANT's (payer) wallet found:`);
+    logger.info(`   Wallet ID: ${payerWallet.id}`);
     logger.info(`   circle_wallet_id: ${payerWallet.circle_wallet_id}`);
     logger.info(`   circle_wallet_address: ${payerWallet.circle_wallet_address}`);
-    logger.info(`   user_id: ${payerWallet.user_id}`);
+    logger.info(`   Owner user_id: ${payerWallet.user_id}`);
 
     // Get recipient wallet (payee)
-    const recipientResult = await query(
-      `SELECT * FROM user_wallets WHERE user_id = $1 ORDER BY created_at ASC LIMIT 1`,
-      [request.from_agent_wallet_id]
-    );
-
-    if (!recipientResult.rows || recipientResult.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        error: 'Recipient wallet not found'
-      });
+    logger.info(`\n🔍 Step 2: Looking for LANDLORD's (payee) wallet...`);
+    logger.info(`   Landlord user_id: ${request.from_agent_wallet_id}`);
+    logger.info(`   ⚠️ IMPORTANT: Will use receiver_wallet_address from contract if available!`);
+    
+    // Check if contract has a specific receiver wallet address
+    const contractDetails = typeof request.raw_contract_text === 'string' 
+      ? JSON.parse(request.raw_contract_text) 
+      : request.raw_contract_text;
+    
+    const receiverWalletAddress = contractDetails?.receiver_wallet_address;
+    
+    if (receiverWalletAddress) {
+      logger.info(`   ✅ Found receiver_wallet_address in contract: ${receiverWalletAddress}`);
+      
+      // Get the specific wallet by address
+      const recipientResult = await query(
+        `SELECT * FROM user_wallets WHERE circle_wallet_address = $1`,
+        [receiverWalletAddress]
+      );
+      
+      if (!recipientResult.rows || recipientResult.rows.length === 0) {
+        logger.error(`   ❌ Receiver wallet not found: ${receiverWalletAddress}`);
+        return res.status(404).json({
+          success: false,
+          error: `Receiver wallet not found: ${receiverWalletAddress}`
+        });
+      }
+      
+      var recipientWallet = recipientResult.rows[0];
+    } else {
+      logger.info(`   ⚠️ No receiver_wallet_address in contract, using fallback logic...`);
+      
+      // Fallback: Get landlord's wallet that is NOT the same as tenant's wallet
+      const recipientResult = await query(
+        `SELECT * FROM user_wallets 
+         WHERE user_id = $1 
+         AND circle_wallet_address != $2 
+         ORDER BY created_at DESC LIMIT 1`,
+        [request.from_agent_wallet_id, request.to_agent_wallet_address]
+      );
+      
+      if (!recipientResult.rows || recipientResult.rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          error: 'Recipient wallet not found'
+        });
+      }
+      
+      var recipientWallet = recipientResult.rows[0];
     }
 
-    const recipientWallet = recipientResult.rows[0];
-
-    logger.info(`📋 Recipient wallet details:`);
-    logger.info(`   ID: ${recipientWallet.id}`);
+    logger.info(`✅ LANDLORD's (payee) wallet found:`);
+    logger.info(`   Wallet ID: ${recipientWallet.id}`);
     logger.info(`   circle_wallet_id: ${recipientWallet.circle_wallet_id}`);
     logger.info(`   circle_wallet_address: ${recipientWallet.circle_wallet_address}`);
-    logger.info(`   user_id: ${recipientWallet.user_id}`);
+    logger.info(`   Owner user_id: ${recipientWallet.user_id}`);
+
+    logger.info(`\n🎯 === FINAL PAYMENT DIRECTION === `);
+    logger.info(`💸 Sending ${request.amount} USDC:`);
+    logger.info(`   FROM (SOURCE): ${payerWallet.circle_wallet_address} (tenant)`);
+    logger.info(`   TO (DESTINATION): ${recipientWallet.circle_wallet_address} (landlord)`);
+    logger.info(`\n⚠️ CRITICAL CHECK:`);
+    logger.info(`   Is TENANT wallet being debited? ${payerWallet.circle_wallet_address}`);
+    logger.info(`   Is LANDLORD wallet being credited? ${recipientWallet.circle_wallet_address}`);
+    logger.info(`   Your PRIMARY wallet: Should NOT be debited!`);
+    logger.info(`===========================\n`);
 
     // Validate we have required fields
     if (!payerWallet.circle_wallet_id) {

@@ -51,6 +51,15 @@ const RequestContractNew = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Get receiver wallet from localStorage
+    const receiver_wallet_address = localStorage.getItem('receiver_wallet_address');
+    
+    if (!receiver_wallet_address) {
+      toast.error("❌ Please set your receiving wallet in Request Center first!");
+      navigate('/request-center');
+      return;
+    }
+    
     if (!formData.contract_type || !formData.amount_usdc || !formData.payer_address) {
       toast.error("Please fill in all required fields");
       return;
@@ -64,9 +73,6 @@ const RequestContractNew = () => {
     setIsLoading(true);
 
     try {
-      // Get your first wallet address (you're the payee/receiver)
-      const myWalletAddress = userWallets[0].address;
-
       // Create contract where YOU are the PAYEE (receiver)
       const contractData = {
         // Backend expects these fields at root level
@@ -75,6 +81,7 @@ const RequestContractNew = () => {
         description: formData.description || '',
         counterparty_name: 'Payer', // Just a placeholder
         counterparty_address: formData.payer_address, // Person who will pay
+        receiver_wallet_address: receiver_wallet_address, // From global settings
         amount_usdc: parseFloat(formData.amount_usdc),
         payment_frequency: formData.payment_frequency,
         start_date: formData.start_date || new Date().toISOString().split('T')[0],
@@ -192,7 +199,7 @@ const RequestContractNew = () => {
 
               {/* Payer Address */}
               <div className="space-y-2">
-                <Label htmlFor="payer_address">Payer Wallet Address *</Label>
+                <Label htmlFor="payer_address">Payer Wallet Address (FROM) *</Label>
                 <Select
                   value={formData.payer_address}
                   onValueChange={(value) => setFormData({ ...formData, payer_address: value })}
@@ -220,10 +227,7 @@ const RequestContractNew = () => {
                   />
                 )}
                 <p className="text-xs text-muted-foreground">
-                  {userWallets.length > 0 
-                    ? "💡 For testing: Select one of YOUR wallets to simulate tenant/payer"
-                    : "The wallet address of the person who will pay you"
-                  }
+                  💸 Money will be SENT FROM this wallet (tenant/payer)
                 </p>
               </div>
 

@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import GlobalAIChat from "@/components/GlobalAIChat"; // 🤖 Global AI Assistant
+import GlobalVoiceAssistant from "@/components/GlobalVoiceAssistant"; // 🎤 Global Voice Assistant
 import Index from "./pages/Index";
 import Features from "./pages/Features";
 import UseCases from "./pages/UseCases";
@@ -34,6 +36,12 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        {/* 🎤 Global Voice Assistant - Available on all pages (above chat) */}
+        <GlobalVoiceAssistant />
+        
+        {/* 🤖 Global AI Chat - Available on all pages */}
+        <GlobalAIChat />
+        
         <Routes>
             {/* Public routes */}
           <Route path="/" element={<Index />} />

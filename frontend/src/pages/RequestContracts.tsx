@@ -4,11 +4,18 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Home, Package, DollarSign, Building2, Cog, Plus, Search, FileText, Bell, Send } from "lucide-react";
+import { Home, Package, DollarSign, Building2, Cog, Plus, Search, FileText, Bell, Send, Wallet } from "lucide-react";
 import AppSidebar from "@/components/AppSidebar";
 import { useAuth } from "@/contexts/AuthContext";
-import { requestCenterAPI } from "@/services/api";
+import { requestCenterAPI, walletsAPI } from "@/services/api";
 import { toast } from "sonner";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const RequestContracts = () => {
   const navigate = useNavigate();
@@ -18,6 +25,36 @@ const RequestContracts = () => {
   const [contracts, setContracts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [sendingRequest, setSendingRequest] = useState<string | null>(null);
+  const [userWallets, setUserWallets] = useState<any[]>([]);
+  const [selectedReceiverWallet, setSelectedReceiverWallet] = useState<string>("");
+
+  // Fetch user wallets
+  useEffect(() => {
+    fetchWallets();
+  }, []);
+
+  const fetchWallets = async () => {
+    try {
+      const response = await walletsAPI.getMy();
+      if (response.success && response.wallets) {
+        setUserWallets(response.wallets);
+        
+        // Load saved receiver wallet from localStorage
+        const savedWallet = localStorage.getItem('receiver_wallet_address');
+        if (savedWallet) {
+          setSelectedReceiverWallet(savedWallet);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch wallets:', error);
+    }
+  };
+
+  const handleReceiverWalletChange = (address: string) => {
+    setSelectedReceiverWallet(address);
+    localStorage.setItem('receiver_wallet_address', address);
+    toast.success(`✅ Receiver wallet set to ${address.slice(0, 6)}...${address.slice(-4)}`);
+  };
 
   // Fetch request contracts from API
   useEffect(() => {
@@ -164,6 +201,64 @@ const RequestContracts = () => {
         </header>
 
         <div className="p-6 space-y-6">
+          {/* Global Receiver Wallet Selector */}
+          <Card className="p-6 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border-green-200 dark:border-green-800">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center flex-shrink-0">
+                <Wallet className="w-6 h-6 text-white" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-lg mb-1">💰 Your Receiving Wallet</h3>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Select which wallet will receive ALL payments from your request contracts
+                </p>
+                <div className="flex gap-3 items-center flex-wrap">
+                  <div className="flex-1 min-w-[300px]">
+                    <Select
+                      value={selectedReceiverWallet}
+                      onValueChange={handleReceiverWalletChange}
+                    >
+                      <SelectTrigger className="w-full bg-white dark:bg-gray-800">
+                        <SelectValue placeholder="Select your receiving wallet...">
+                          {selectedReceiverWallet && (() => {
+                            const wallet = userWallets.find(w => w.address === selectedReceiverWallet);
+                            return wallet ? (
+                              <div className="flex items-center gap-2">
+                                <Wallet className="w-4 h-4" />
+                                <span className="font-medium">{wallet.name || "My Wallet"}</span>
+                                <span className="text-xs text-muted-foreground">
+                                  ({wallet.address.slice(0, 6)}...{wallet.address.slice(-4)})
+                                </span>
+                              </div>
+                            ) : "Select your receiving wallet...";
+                          })()}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {userWallets.map((wallet) => (
+                          <SelectItem key={wallet.id} value={wallet.address}>
+                            <div className="flex items-center gap-2">
+                              <Wallet className="w-4 h-4" />
+                              <span className="font-medium">{wallet.name || "My Wallet"}</span>
+                              <span className="text-xs text-muted-foreground">
+                                ({wallet.address.slice(0, 6)}...{wallet.address.slice(-4)})
+                              </span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {selectedReceiverWallet && (
+                    <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100 px-3 py-1">
+                      ✓ Active
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            </div>
+          </Card>
+
           {/* Info Banner */}
           <Card className="p-4 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20 border-purple-200 dark:border-purple-800">
             <div className="flex gap-3">

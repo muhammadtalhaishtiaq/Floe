@@ -1,4 +1,4 @@
--- PayMind RWA Database Schema
+-- Floe RWA Database Schema
 -- PostgreSQL Database Schema for Real-World Asset Payment Automation
 
 -- ============================================
@@ -224,7 +224,7 @@ INSERT INTO users (email, role) VALUES
   ('maria@example.com', 'payer'),
   ('landlord@example.com', 'payee'),
   ('supplier@example.com', 'payee'),
-  ('admin@paymind.com', 'admin')
+  ('admin@floe.com', 'admin')
 ON CONFLICT (email) DO NOTHING;
 
 -- Sample tokenized asset
@@ -235,7 +235,7 @@ ON CONFLICT DO NOTHING;
 -- ============================================
 -- COMMENTS FOR DOCUMENTATION
 -- ============================================
-COMMENT ON TABLE users IS 'Users of the PayMind RWA platform';
+COMMENT ON TABLE users IS 'Users of the Floe RWA platform';
 COMMENT ON TABLE rwa_contracts IS 'Real-world asset contracts with payment terms';
 COMMENT ON TABLE payment_schedules IS 'Recurring payment schedules managed by CRON';
 COMMENT ON TABLE transactions IS 'USDC payment transaction logs on Arc blockchain';

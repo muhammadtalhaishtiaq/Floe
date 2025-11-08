@@ -240,11 +240,19 @@ const A2ARequests: React.FC = () => {
                 }`}
               >
                 📥 Incoming Requests
-                {requests.filter(r => r.status === 'pending').length > 0 && (
-                  <span className="ml-2 px-2 py-1 bg-red-500 text-white text-xs rounded-full">
-                    {requests.filter(r => r.status === 'pending').length}
-                  </span>
-                )}
+                {(() => {
+                  const incomingCount = requests.filter(r => {
+                    if (!currentUserId) return false;
+                    const isPayer = (r as any).payer_id === currentUserId;
+                    const isPending = r.status === 'pending' || r.status === 'approved';
+                    return isPayer && isPending;
+                  }).length;
+                  return incomingCount > 0 && (
+                    <span className="ml-2 px-2 py-1 bg-red-500 text-white text-xs rounded-full">
+                      {incomingCount}
+                    </span>
+                  );
+                })()}
               </button>
               <button
                 onClick={() => setActiveTab('outgoing')}
@@ -255,6 +263,19 @@ const A2ARequests: React.FC = () => {
                 }`}
               >
                 📤 Outgoing Requests
+                {(() => {
+                  const outgoingCount = requests.filter(r => {
+                    if (!currentUserId) return false;
+                    const isPayee = (r as any).payee_id === currentUserId;
+                    const isPending = r.status === 'pending' || r.status === 'approved';
+                    return isPayee && isPending;
+                  }).length;
+                  return outgoingCount > 0 && (
+                    <span className="ml-2 px-2 py-1 bg-blue-500 text-white text-xs rounded-full">
+                      {outgoingCount}
+                    </span>
+                  );
+                })()}
               </button>
               <button
                 onClick={() => setActiveTab('activity')}

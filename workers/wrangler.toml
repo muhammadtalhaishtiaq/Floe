@@ -1,4 +1,4 @@
-name = "paymind-rwa-ai-agent"
+name = "floe-rwa-ai-agent"
 main = "src/index.ts"
 compatibility_date = "2024-01-01"
 
@@ -6,8 +6,8 @@ compatibility_date = "2024-01-01"
 binding = "AI"
 
 [env.production]
-name = "paymind-rwa-ai-agent-prod"
+name = "floe-rwa-ai-agent-prod"
 
 [env.staging]
-name = "paymind-rwa-ai-agent-staging"
+name = "floe-rwa-ai-agent-staging"
 
