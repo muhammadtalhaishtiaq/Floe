@@ -217,7 +217,15 @@ router.post('/send-request/:contractId', authenticateToken, async (req: Request,
         logger.info(`📝 Reasoning: ${decision.reasoning}`);
 
         // Update request with decision
-        const newStatus = decision.approved ? 'approved' : 'rejected';
+        // For MANUAL mode: Keep as 'pending' even if checks pass (needs human execution)
+        // For AUTO mode: Set to 'approved' or 'rejected' based on decision
+        let newStatus;
+        if (contract.a2a_approval_mode === 'manual') {
+          newStatus = decision.approved ? 'pending' : 'rejected'; // 'pending' means waiting for human execution
+        } else {
+          newStatus = decision.approved ? 'approved' : 'rejected';
+        }
+        
         await query(
           `UPDATE a2a_requests 
            SET status = $1, 
@@ -230,7 +238,8 @@ router.post('/send-request/:contractId', authenticateToken, async (req: Request,
               approved: decision.approved,
               reasoning: decision.reasoning,
               timestamp: new Date(),
-              mode: contract.a2a_approval_mode || 'manual'
+              mode: contract.a2a_approval_mode || 'manual',
+              awaiting_human_execution: contract.a2a_approval_mode === 'manual' && decision.approved
             }),
             paymentRequest.id
           ]
@@ -246,7 +255,7 @@ router.post('/send-request/:contractId', authenticateToken, async (req: Request,
 
             // Find payer's wallet by address
             const payerWalletResult = await query(
-              `SELECT * FROM user_wallets WHERE address = $1`,
+              `SELECT * FROM user_wallets WHERE circle_wallet_address = $1`,
               [payerAddress]
             );
 
@@ -271,22 +280,23 @@ router.post('/send-request/:contractId', authenticateToken, async (req: Request,
             const landlordWallet = landlordWalletResult.rows[0];
 
             logger.info(`💸 Executing payment:`);
-            logger.info(`   FROM: ${payerWallet.wallet_id} (${payerWallet.address})`);
-            logger.info(`   TO: ${landlordWallet.address}`);
+            logger.info(`   FROM: ${payerWallet.circle_wallet_id} (${payerWallet.circle_wallet_address})`);
+            logger.info(`   TO: ${landlordWallet.circle_wallet_address}`);
             logger.info(`   AMOUNT: ${requestAmount} USDC`);
 
             // Execute payment via Circle SDK
-            const paymentResult = await CircleService.transferUSDC(
-              payerWallet.wallet_id,
-              landlordWallet.address,
-              requestAmount,
-              'ARC-TESTNET',
-              {
+            const paymentResult = await CircleService.transferUSDC({
+              sourceWalletId: payerWallet.circle_wallet_id,
+              sourceChain: 'ARC-TESTNET',
+              destWalletAddress: landlordWallet.circle_wallet_address,
+              destChain: 'ARC-TESTNET',
+              amount: requestAmount.toString(),
+              metadata: {
                 contractId: contractId,
                 requestId: paymentRequest.id,
                 description: requestDescription
               }
-            );
+            });
 
             if (paymentResult.success) {
               // Update request status to 'paid'

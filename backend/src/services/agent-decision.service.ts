@@ -58,19 +58,23 @@ class AgentDecisionService {
         approvalMode
       });
 
-      // If manual mode, always require human approval
+      // If manual mode, perform checks but require human approval for execution
       if (approvalMode === 'manual') {
+        // Still perform security checks
+        const checks = this.performSecurityChecks(paymentRequest, contractTerms);
+        const riskLevel = this.calculateRiskLevel(checks, paymentRequest, contractTerms);
+        
+        // For manual mode, approve if checks pass but flag for human execution
+        const allChecksPassed = checks.amountMatch && checks.addressMatch && checks.timingCorrect && !checks.suspiciousActivity;
+        
         return {
-          approved: false,
-          confidence: 0,
-          reasoning: 'Manual approval mode enabled. Human review required before payment execution.',
-          riskLevel: 'low',
-          checks: {
-            amountMatch: false,
-            addressMatch: false,
-            timingCorrect: false,
-            suspiciousActivity: false
-          }
+          approved: allChecksPassed, // Approve if checks pass
+          confidence: allChecksPassed ? 85 : 0,
+          reasoning: allChecksPassed 
+            ? 'Payment checks passed. Manual approval mode - human must execute payment manually.'
+            : 'Payment checks failed. Manual review required.',
+          riskLevel: riskLevel,
+          checks: checks
         };
       }
 

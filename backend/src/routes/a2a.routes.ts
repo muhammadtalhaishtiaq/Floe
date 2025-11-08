@@ -473,7 +473,7 @@ router.post('/request', authenticateToken, async (req: Request, res: Response) =
             try {
               // Find payer's wallet by address
               const walletResult = await query(
-                `SELECT * FROM user_wallets WHERE address = $1`,
+                `SELECT * FROM user_wallets WHERE circle_wallet_address = $1`,
                 [toWalletAddress]
               );
 
@@ -489,22 +489,23 @@ router.post('/request', authenticateToken, async (req: Request, res: Response) =
 
                 if (myWalletResult.rows && myWalletResult.rows.length > 0) {
                   const recipientWallet = myWalletResult.rows[0];
-                  logger.info(`✅ Found recipient wallet: ${recipientWallet.address}`);
+                  logger.info(`✅ Found recipient wallet: ${recipientWallet.circle_wallet_address}`);
 
                   // Execute payment via Circle SDK
-                  logger.info(`🔄 Executing payment: ${amount} USDC from ${payerWallet.wallet_id} to ${recipientWallet.address}`);
+                  logger.info(`🔄 Executing payment: ${amount} USDC from ${payerWallet.circle_wallet_id} to ${recipientWallet.circle_wallet_address}`);
                   
-                  const paymentResult = await CircleService.transferUSDC(
-                    payerWallet.wallet_id,
-                    recipientWallet.address,
-                    amount,
-                    network,
-                    {
+                  const paymentResult = await CircleService.transferUSDC({
+                    sourceWalletId: payerWallet.circle_wallet_id,
+                    sourceChain: network,
+                    destWalletAddress: recipientWallet.circle_wallet_address,
+                    destChain: network,
+                    amount: amount.toString(),
+                    metadata: {
                       contractId: contractId,
                       requestId: paymentRequest.id,
                       description: description || 'A2A automated payment'
                     }
-                  );
+                  });
 
                   if (paymentResult.success) {
                     // Update request status to 'paid'
@@ -738,12 +739,18 @@ router.post('/execute-payment/:requestId', authenticateToken, async (req: Reques
   try {
     const { requestId } = req.params;
     const userId = (req as any).user?.userId || (req as any).user?.id;
-
+    logger.info(` ================================================ Processing A2A Payment Request ================================================`);
     logger.info(`💸 Manual payment execution requested for request ${requestId}`);
 
     // Get request details
     const requestResult = await query(
-      `SELECT r.*, c.* FROM a2a_requests r
+      `SELECT 
+        r.*,
+        c.payer_id as contract_payer_id,
+        c.payee_id as contract_payee_id,
+        c.a2a_approval_mode,
+        c.asset_description as contract_title
+       FROM a2a_requests r
        LEFT JOIN rwa_contracts c ON r.contract_id = c.id
        WHERE r.id = $1`,
       [requestId]
@@ -758,21 +765,32 @@ router.post('/execute-payment/:requestId', authenticateToken, async (req: Reques
 
     const request = requestResult.rows[0];
 
-    // Check if request is approved
-    if (request.status !== 'approved') {
+    logger.info(`📋 Request found: ${request.description}`);
+    logger.info(`   Status: ${request.status}`);
+    logger.info(`   Amount: ${request.amount} USDC`);
+
+    // Check if request is ready for execution (pending or approved)
+    if (request.status !== 'pending' && request.status !== 'approved') {
+      logger.error(`❌ Cannot execute - invalid status: ${request.status}`);
       return res.status(400).json({
         success: false,
         error: `Cannot execute payment - request status is ${request.status}`
       });
     }
 
+    logger.info(`✅ Status check passed - proceeding with payment execution`);
+
     // Find payer's wallet by address
+    logger.info(`🔍 Looking for payer wallet: ${request.to_agent_wallet_address}`);
     const walletResult = await query(
-      `SELECT * FROM user_wallets WHERE address = $1`,
+      `SELECT * FROM user_wallets WHERE circle_wallet_address = $1`,
       [request.to_agent_wallet_address]
     );
 
+    logger.info(`📊 Wallet query result: ${walletResult.rows?.length || 0} rows`);
+
     if (!walletResult.rows || walletResult.rows.length === 0) {
+      logger.error(`❌ Payer wallet not found for address: ${request.to_agent_wallet_address}`);
       return res.status(404).json({
         success: false,
         error: 'Payer wallet not found'
@@ -780,6 +798,12 @@ router.post('/execute-payment/:requestId', authenticateToken, async (req: Reques
     }
 
     const payerWallet = walletResult.rows[0];
+    
+    logger.info(`📋 Payer wallet details:`);
+    logger.info(`   ID: ${payerWallet.id}`);
+    logger.info(`   circle_wallet_id: ${payerWallet.circle_wallet_id}`);
+    logger.info(`   circle_wallet_address: ${payerWallet.circle_wallet_address}`);
+    logger.info(`   user_id: ${payerWallet.user_id}`);
 
     // Get recipient wallet (payee)
     const recipientResult = await query(
@@ -796,22 +820,48 @@ router.post('/execute-payment/:requestId', authenticateToken, async (req: Reques
 
     const recipientWallet = recipientResult.rows[0];
 
+    logger.info(`📋 Recipient wallet details:`);
+    logger.info(`   ID: ${recipientWallet.id}`);
+    logger.info(`   circle_wallet_id: ${recipientWallet.circle_wallet_id}`);
+    logger.info(`   circle_wallet_address: ${recipientWallet.circle_wallet_address}`);
+    logger.info(`   user_id: ${recipientWallet.user_id}`);
+
+    // Validate we have required fields
+    if (!payerWallet.circle_wallet_id) {
+      logger.error(`❌ Payer wallet missing circle_wallet_id!`);
+      return res.status(400).json({
+        success: false,
+        error: 'Payer wallet configuration error - missing wallet ID'
+      });
+    }
+
+    if (!recipientWallet.circle_wallet_address) {
+      logger.error(`❌ Recipient wallet missing circle_wallet_address!`);
+      return res.status(400).json({
+        success: false,
+        error: 'Recipient wallet configuration error - missing wallet address'
+      });
+    }
+
     logger.info(`🔄 Executing payment: ${request.amount} USDC`);
-    logger.info(`   From: ${payerWallet.wallet_id} (${payerWallet.address})`);
-    logger.info(`   To: ${recipientWallet.address}`);
+    logger.info(`   From: ${payerWallet.circle_wallet_id} (${payerWallet.circle_wallet_address})`);
+    logger.info(`   To: ${recipientWallet.circle_wallet_address}`);
 
     // Execute payment via Circle SDK
-    const paymentResult = await CircleService.transferUSDC(
-      payerWallet.wallet_id,
-      recipientWallet.address,
-      request.amount,
-      request.network,
-      {
+    const paymentResult = await CircleService.transferUSDC({
+      sourceWalletId: payerWallet.circle_wallet_id,
+      sourceChain: request.network,
+      destWalletAddress: recipientWallet.circle_wallet_address,
+      destChain: request.network, // Same network for now
+      amount: request.amount.toString(),
+      metadata: {
         contractId: request.contract_id,
         requestId: request.id,
         description: request.description || 'A2A manual payment'
       }
-    );
+    });
+
+    logger.info(`📊 Payment result:`, paymentResult);
 
     if (paymentResult.success) {
       // Update request status to 'paid'
@@ -835,6 +885,8 @@ router.post('/execute-payment/:requestId', authenticateToken, async (req: Reques
         }
       });
     } else {
+      logger.error(`❌ Payment failed! Error: ${paymentResult.error}`);
+      logger.error(`Full payment result:`, paymentResult);
       throw new Error(paymentResult.error || 'Payment execution failed');
     }
 

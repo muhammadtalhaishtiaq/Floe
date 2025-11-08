@@ -391,33 +391,49 @@ export class CircleService {
     logger.info(`   From: ${sourceWalletId} (${sourceChain})`);
     logger.info(`   To: ${destWalletAddress} (${destChain})`);
 
-    // Import CCTP service dynamically to avoid circular dependency
-    const CCTPService = require('./cctp.service').default;
+    try {
+      // Import CCTP service dynamically to avoid circular dependency
+      const CCTPService = require('./cctp.service').default;
 
-    // Check if cross-chain transfer is needed
-    if (CCTPService.requiresCCTP(sourceChain, destChain)) {
-      logger.info('🌉 Cross-chain detected → Using CCTP');
-      
-      // Use CCTP for cross-chain transfer
-      return await CCTPService.transferCrossChain({
-        sourceWalletId,
-        sourceChain,
-        destWalletAddress,
-        destChain,
-        amount,
-        metadata
-      });
-    } else {
-      logger.info('⚡ Same-chain detected → Direct transfer');
-      
-      // Use direct transfer for same-chain
-      return await this.createPayment({
-        sourceWalletId,
-        destinationWalletId: destWalletAddress,
-        amount,
-        blockchain: sourceChain, // ✅ Pass the source blockchain
-        metadata
-      });
+      // Check if cross-chain transfer is needed
+      if (CCTPService.requiresCCTP(sourceChain, destChain)) {
+        logger.info('🌉 Cross-chain detected → Using CCTP');
+        
+        // Use CCTP for cross-chain transfer
+        return await CCTPService.transferCrossChain({
+          sourceWalletId,
+          sourceChain,
+          destWalletAddress,
+          destChain,
+          amount,
+          metadata
+        });
+      } else {
+        logger.info('⚡ Same-chain detected → Direct transfer');
+        
+        // Use direct transfer for same-chain
+        const paymentData = await this.createPayment({
+          sourceWalletId,
+          destinationWalletId: destWalletAddress,
+          amount,
+          blockchain: sourceChain, // ✅ Pass the source blockchain
+          metadata
+        });
+
+        // Return in consistent format
+        return {
+          success: true,
+          transactionId: paymentData.id,
+          status: paymentData.state,
+          data: paymentData
+        };
+      }
+    } catch (error: any) {
+      logger.error('❌ Transfer failed:', error);
+      return {
+        success: false,
+        error: error.message || 'Transfer failed'
+      };
     }
   }
 }

@@ -24,8 +24,20 @@ const A2ARequests: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'incoming' | 'outgoing' | 'activity' | 'upcoming'>('incoming');
   const [activities, setActivities] = useState<any[]>([]);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
+    // Get current user ID from localStorage
+    const user = localStorage.getItem('user');
+    if (user) {
+      try {
+        const userData = JSON.parse(user);
+        setCurrentUserId(userData.id || userData.userId);
+      } catch (e) {
+        console.error('Failed to parse user data:', e);
+      }
+    }
+    
     fetchA2ARequests();
     if (activeTab === 'activity') {
       fetchActivityLog();
@@ -297,7 +309,21 @@ const A2ARequests: React.FC = () => {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {requests.map((request) => (
+                  {requests
+                    .filter(request => {
+                      if (!currentUserId) return true; // Show all if we can't determine user
+                      
+                      // Incoming: Requests where YOU are the PAYER (someone requesting payment FROM you)
+                      // Outgoing: Requests where YOU are the PAYEE (YOU requesting payment from someone)
+                      if (activeTab === 'incoming') {
+                        // Show requests where you are the PAYER (contract.payer_id === currentUserId)
+                        return (request as any).payer_id === currentUserId;
+                      } else {
+                        // Show requests where you are the PAYEE (contract.payee_id === currentUserId)
+                        return (request as any).payee_id === currentUserId;
+                      }
+                    })
+                    .map((request) => (
                     <div
                       key={request.id}
                       className="bg-card rounded-lg shadow-sm p-6 hover:shadow-md transition border-l-4 border-blue-500 border"
@@ -362,7 +388,7 @@ const A2ARequests: React.FC = () => {
                         )}
                         
                         {/* Manual Approval - Execute Payment Button */}
-                        {request.status === 'approved' && (
+                        {(request.status === 'approved' || request.status === 'pending') && (
                           <div className="flex gap-2 ml-4">
                             <button
                               onClick={() => handleExecutePayment(request.id)}
