@@ -1,0 +1,21 @@
+{
+  "name": "paymind-rwa-ai-agent",
+  "version": "1.0.0",
+  "description": "AI Agent for PayMind RWA - Contract parsing and condition evaluation",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "deploy:staging": "wrangler deploy --env staging",
+    "deploy:production": "wrangler deploy --env production"
+  },
+  "keywords": ["cloudflare", "workers", "ai", "llm"],
+  "author": "PayMind Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20231218.0",
+    "wrangler": "^3.20.0",
+    "typescript": "^5.3.3"
+  }
+}
+

@@ -1,0 +1,39 @@
+{
+  "name": "floe",
+  "version": "1.0.0",
+  "description": "Floe - Smooth AI Payment Automation for Real-World Assets on Arc with USDC",
+  "main": "index.js",
+  "scripts": {
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "build:backend": "cd backend && npm run build",
+    "build:frontend": "cd frontend && npm run build",
+    "build": "npm run build:backend && npm run build:frontend",
+    "test": "npm run test:backend && npm run test:frontend",
+    "test:backend": "cd backend && npm test",
+    "test:frontend": "cd frontend && npm test",
+    "db:migrate": "cd database && node migrations/run.js",
+    "worker:deploy": "cd workers && wrangler deploy"
+  },
+  "keywords": [
+    "AI",
+    "Arc",
+    "USDC",
+    "Circle",
+    "RWA",
+    "blockchain",
+    "payments",
+    "DeFi"
+  ],
+  "author": "Your Team Name",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-team/floe"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
+

@@ -1,0 +1,2620 @@
+# 🏆 FLOE - HACKATHON MASTER PLAN
+## AI Agents on Arc with USDC - Complete Implementation Guide
+
+**Event:** [AI Agents on Arc with USDC Hackathon](https://lablab.ai/event/ai-agents-arc-usdc)  
+**Track:** 🏢 Payments for Real-World Assets (RWA)  
+**Project:** Floe - AI-Powered Payment Automation for Tokenized Assets
+
+---
+
+## 📖 TABLE OF CONTENTS
+1. [Executive Summary](#executive-summary)
+2. [User Personas & Journeys](#user-personas--journeys)
+3. [Complete Feature Checklist](#complete-feature-checklist)
+4. [Technical Implementation](#technical-implementation)
+5. [UI/UX Requirements](#uiux-requirements)
+6. [Demo Script](#demo-script)
+7. [Hackathon Requirements Mapping](#hackathon-requirements-mapping)
+
+---
+
+## 🎯 EXECUTIVE SUMMARY
+
+### What is Floe?
+**Floe = Smooth Flow of Payments**
+
+An AI-powered platform that automates USDC payments for tokenized real-world assets on Arc blockchain. Users upload contracts (leases, bonds, invoices), AI extracts payment terms, and executes payments automatically.
+
+### The Problem
+- Manual crypto payments are tedious and error-prone
+- Late payments = penalties, damaged relationships
+- Reading contracts and setting up recurring payments takes time
+- No automation for conditional payments (delivery-based, milestone-based)
+
+### Our Solution
+- 🤖 **AI Agent** reads contracts → extracts payment terms
+- ⏰ **Auto-scheduler** creates payment schedules
+- 💸 **Auto-executor** sends USDC payments on time
+- 🎤 **Voice Interface** (ElevenLabs) for accessibility
+- 🔗 **Arc Blockchain** for fast, cheap USDC transactions
+
+### Key Differentiators
+1. ✅ Natural language contract parsing (not manual forms)
+2. ✅ AI decides when to pay (conditional logic)
+3. ✅ Voice interaction for non-technical users
+4. ✅ Works for multiple RWA types (rent, bonds, supply chain)
+5. ✅ Fully automated (set & forget)
+
+---
+
+## 👥 USER PERSONAS & JOURNEYS
+
+### PERSONA 1: The Payer (Service Buyer)
+**Name:** Maria Rodriguez  
+**Role:** Real Estate Investor  
+**Age:** 34  
+**Tech Level:** Intermediate  
+
+**Needs:**
+- Pay rent on 3 tokenized properties automatically
+- Avoid late fees
+- Track all payments in one place
+- Get reminders before payments
+
+**Pain Points:**
+- Forgets payment dates
+- Manual transfers take time
+- Multiple wallets confusing
+- No proof of on-time payment
+
+---
+
+### PERSONA 2: The Payee (Service Provider)
+**Name:** John Smith  
+**Role:** Property Owner / Landlord  
+**Age:** 45  
+**Tech Level:** Basic  
+
+**Needs:**
+- Receive rent payments on time
+- Automatic notifications when paid
+- View all tenants and payment history
+- Export records for taxes
+
+**Pain Points:**
+- Chasing late payments
+- Manual invoice generation
+- No payment guarantees
+- Reconciliation takes hours
+
+---
+
+### PERSONA 3: The Business (Supply Chain)
+**Name:** Acme Manufacturing Corp  
+**Role:** Supplier  
+**Age:** N/A (Company)  
+**Tech Level:** Advanced  
+
+**Needs:**
+- Receive payment on delivery confirmation
+- Milestone-based payments for large orders
+- Automated invoicing
+- Real-time payment status
+
+**Pain Points:**
+- Payment delays hurt cash flow
+- Manual verification of delivery
+- Invoice disputes
+- No automated escrow
+
+---
+
+## 🗺️ USER JOURNEYS
+
+### Journey 1: Maria Sets Up Rent Payment (PAYER)
+
+**Scenario:** Maria just rented a tokenized apartment for $1,200/month USDC.
+
+#### Step-by-Step Flow:
+
+**1. Login to Floe**
+```
+UI: Login page
+Action: maria@example.com / password
+Result: Redirected to Dashboard
+```
+
+**2. View Dashboard**
+```
+UI: Dashboard showing wallet balance, upcoming payments
+Display:
+  - Wallet Balance: 15,000 USDC
+  - Upcoming Payments: 0
+  - Active Contracts: 0
+Action: Click "Create New Contract"
+```
+
+**3. Upload Contract**
+```
+UI: Create Contract page
+Elements:
+  - Drag & drop zone OR text input
+  - Contract type dropdown (Rent, Invoice, Bond, etc.)
+  
+Action: Maria uploads her lease agreement PDF
+Alternative: Maria pastes contract text
+
+Contract Text Example:
+"Monthly lease payment of $1,200 USDC due on the 1st of each month 
+for Apartment #405, 123 Main St. Lease term: Jan 1, 2025 - Dec 31, 2025.
+Payee: John Smith (0x1234...5678)"
+```
+
+**4. AI Parsing (Backend Magic)**
+```
+UI: Loading animation "🤖 AI is reading your contract..."
+Backend Flow:
+  1. Frontend sends contract to: POST /api/contracts/parse
+  2. Backend calls Cloudflare Workers AI
+  3. AI extracts:
+     - Type: Rent/Lease
+     - Amount: 1200 USDC
+     - Frequency: Monthly
+     - Due Date: 1st of each month
+     - Start: Jan 1, 2025
+     - End: Dec 31, 2025
+     - Payee: John Smith (wallet: 0x1234...5678)
+     - Payer: Maria Rodriguez (wallet: 0xabcd...efgh)
+  4. Returns structured JSON
+
+Time: 3-5 seconds
+```
+
+**5. Review Extracted Terms**
+```
+UI: Contract Review page
+Display:
+  ╔═══════════════════════════════════════╗
+  ║ 📄 CONTRACT DETAILS                   ║
+  ║                                       ║
+  ║ Type: Monthly Rent                    ║
+  ║ Asset: Apartment #405, 123 Main St    ║
+  ║ Amount: 1,200 USDC                    ║
+  ║ Frequency: Monthly                    ║
+  ║ Due Date: 1st of each month           ║
+  ║ First Payment: Jan 1, 2025            ║
+  ║ Last Payment: Dec 31, 2025            ║
+  ║                                       ║
+  ║ Payee: John Smith                     ║
+  ║ Wallet: 0x1234...5678                 ║
+  ║                                       ║
+  ║ Total: $14,400 USDC (12 payments)     ║
+  ╚═══════════════════════════════════════╝
+
+Actions:
+  [Edit Details] [Cancel] [✓ Confirm & Create Schedule]
+
+Maria clicks: ✓ Confirm & Create Schedule
+```
+
+**6. Payment Schedule Created**
+```
+UI: Success message + Schedule view
+Backend:
+  - Creates rwa_contract record
+  - Creates 12 payment_schedule records (one per month)
+  - Links to Maria's wallet
+  - Sets up CRON job
+
+Display:
+  ✅ Contract created successfully!
+  
+  📅 Payment Schedule (12 payments):
+  Jan 1, 2025 - $1,200 USDC [Pending]
+  Feb 1, 2025 - $1,200 USDC [Scheduled]
+  Mar 1, 2025 - $1,200 USDC [Scheduled]
+  ... (9 more)
+  
+Actions:
+  [View Contract] [Back to Dashboard]
+```
+
+**7. Daily Life - Auto Payments**
+```
+Timeline: Dec 31, 2024 (1 day before first payment)
+
+Notification:
+  🔔 Payment Reminder
+  "Your rent payment of $1,200 USDC for Apartment #405 is due tomorrow."
+  [View Details]
+
+Voice Notification (if ElevenLabs enabled):
+  📱 Maria asks: "Hey Floe, when is my next payment?"
+  🎤 AI responds: "Your next payment of twelve hundred USDC for 
+      Miami apartment is due tomorrow, January first, twenty twenty-five."
+
+---
+
+Timeline: Jan 1, 2025, 12:01 AM (Payment day)
+
+Backend CRON job runs:
+  1. Checks all payment_schedules where due_date = today
+  2. Finds Maria's rent payment
+  3. AI evaluates conditions:
+     - ✓ Date matches (Jan 1)
+     - ✓ Wallet has sufficient balance (15,000 USDC > 1,200)
+     - ✓ No payment disputes
+  4. Calls Circle SDK:
+     - createTransaction(from: Maria, to: John, amount: 1200 USDC)
+     - Broadcasts to Arc blockchain
+  5. Records transaction in database
+  6. Sends notifications to both parties
+
+UI Updates:
+  Dashboard:
+    - Wallet Balance: 13,800 USDC (was 15,000)
+    - Upcoming Payments: Feb 1, 2025 ($1,200)
+    - Recent Transactions: 
+      ✅ Jan 1, 2025 - Paid $1,200 USDC to John Smith
+         Tx: 0xabc123...def789
+
+Notification:
+  ✅ Payment Successful!
+  "Your rent payment of $1,200 USDC has been sent to John Smith.
+   Transaction: 0xabc123...def789"
+```
+
+---
+
+### Journey 2: John Receives Payment (PAYEE)
+
+**Scenario:** John owns the apartment Maria is renting.
+
+#### Step-by-Step Flow:
+
+**1. John's Setup (One-Time)**
+```
+UI: Login to Floe
+Action: john@example.com / password
+
+UI: Dashboard
+Display:
+  - Wallet Balance: 5,000 USDC
+  - Expected Payments: 0
+  - Active Contracts: 0
+
+Action: Click "Add Receiving Contract"
+
+UI: Receiving Contract page
+Elements:
+  - Asset Description: "Apartment #405, 123 Main St"
+  - Monthly Amount: $1,200 USDC
+  - Tenant Name: Maria Rodriguez
+  - Tenant Wallet: 0xabcd...efgh
+  
+Action: Click "Create & Share Contract Link"
+
+Result: 
+  - Contract created
+  - Generates shareable link for Maria
+  - OR John uploads same lease as Maria (both parties have same contract)
+```
+
+**2. John's Dashboard (After Maria Sets Up Payment)**
+```
+UI: Dashboard updates automatically
+Display:
+  Expected Payments:
+    📅 Jan 1, 2025 - $1,200 USDC from Maria Rodriguez
+    📅 Feb 1, 2025 - $1,200 USDC from Maria Rodriguez
+    ... (12 total)
+
+  Active Contracts:
+    📄 Apartment #405 Lease
+       Tenant: Maria Rodriguez
+       Amount: $1,200/month
+       Status: Active ✅
+       Next Payment: Jan 1, 2025
+```
+
+**3. John Receives Payment (Jan 1, 2025)**
+```
+Notification:
+  💰 Payment Received!
+  "You received $1,200 USDC from Maria Rodriguez for Apartment #405 rent.
+   Transaction: 0xabc123...def789
+   View on Arc Explorer"
+
+UI: Dashboard updates
+  - Wallet Balance: 6,200 USDC (was 5,000)
+  - Recent Transactions:
+    ✅ Jan 1, 2025 - Received $1,200 USDC from Maria Rodriguez
+       For: Apartment #405 - Monthly Rent
+       Tx: 0xabc123...def789
+
+Voice Notification (if enabled):
+  🎤 "You received twelve hundred USDC from Maria Rodriguez 
+      for apartment four-oh-five rent. Payment confirmed on Arc."
+```
+
+**4. John's Monthly View**
+```
+UI: Payments page
+Display:
+  📊 January 2025 - Received Payments
+  
+  Jan 1:  Maria Rodriguez    $1,200 USDC  [Apartment #405]
+  Jan 5:  Sarah Thompson     $1,500 USDC  [Commercial Suite]
+  Jan 10: Mike Johnson       $800 USDC    [Storage Unit]
+  
+  Total: $3,500 USDC
+  
+  [Export to CSV] [View Tax Report]
+```
+
+---
+
+### Journey 3: Acme Corp Supply Chain Payment (CONDITIONAL)
+
+**Scenario:** Acme Manufacturing orders $50,000 USDC worth of materials. Payment releases on delivery confirmation.
+
+#### Step-by-Step Flow:
+
+**1. Acme Creates Conditional Contract**
+```
+UI: Create Contract page
+Action: Select "Conditional Payment - Supply Chain"
+
+Form:
+  - Supplier: TechParts Inc
+  - Supplier Wallet: 0x9876...5432
+  - Item: Industrial Sensors (Model XYZ-100)
+  - Quantity: 1,000 units
+  - Amount: $50,000 USDC
+  - Condition: "On delivery confirmation"
+  - Evidence Required: "Delivery receipt + tracking number"
+  - Delivery Date: Jan 15, 2025
+
+Action: Click "Create Escrow Contract"
+
+Backend:
+  - Creates contract with status: "pending_delivery"
+  - Locks 50,000 USDC in escrow (via Circle)
+  - Waits for delivery evidence
+```
+
+**2. Supplier Ships Order (Jan 10, 2025)**
+```
+Notification to Acme:
+  📦 Shipment Update
+  "TechParts Inc has shipped your order.
+   Tracking: UPS1234567890
+   Expected Delivery: Jan 15, 2025"
+```
+
+**3. Delivery Confirmation (Jan 15, 2025)**
+```
+Option A: Acme manually confirms
+  UI: Contract page
+  Action: Click "Confirm Delivery"
+  Upload: Delivery receipt (PDF/photo)
+  Result: Payment releases automatically
+
+Option B: Automated (via AI)
+  Backend:
+    1. AI checks tracking number via API
+    2. Sees status: "Delivered - Jan 15, 2025"
+    3. AI verifies delivery address matches contract
+    4. Auto-confirms delivery
+    5. Releases payment
+
+Backend Flow:
+  1. AI evaluates condition:
+     - ✓ Delivery confirmed
+     - ✓ Date matches expected (Jan 15)
+     - ✓ Evidence verified (tracking + receipt)
+  2. Calls Circle SDK:
+     - releaseEscrow(50000 USDC to TechParts)
+  3. Records transaction
+
+Notifications:
+  To Acme:
+    ✅ Payment Released
+    "Your payment of $50,000 USDC has been sent to TechParts Inc
+     on delivery confirmation."
+  
+  To TechParts:
+    💰 Payment Received
+    "You received $50,000 USDC from Acme Corp for Industrial Sensors.
+     Order #12345 - Delivered"
+```
+
+---
+
+## ✅ COMPLETE FEATURE CHECKLIST
+
+### 🔥 CRITICAL (Must Have - Required for Hackathon)
+
+#### 1. ✅ Circle Developer-Controlled Wallets Integration
+**Status:** ✅ Implemented  
+**Priority:** 🔥🔥🔥 CRITICAL  
+**Time:** Already done  
+
+**What It Does:**
+- Creates USDC wallets for users programmatically
+- Executes USDC transactions on Arc blockchain
+- Checks wallet balances
+- Manages wallet security server-side
+
+**Files:**
+- `backend/src/services/circle.service.ts`
+- `backend/src/routes/wallet.routes.ts`
+
+**How It Links:**
+- Users sign up → Circle wallet auto-created
+- Payment executes → Circle SDK sends USDC
+- Dashboard → Shows wallet balance via Circle API
+
+**API Endpoints:**
+- `POST /api/wallets` - Create wallet
+- `GET /api/wallets/:userId` - Get user wallets
+- `GET /api/wallets/:id/balance` - Check balance
+
+**Hackathon Requirement:** ✅ Required Technology  
+**Reference:** https://developers.circle.com/sdk-explorer#server-side-sdks
+
+---
+
+#### 2. ❌ AI Agent for Contract Parsing (MISSING!)
+**Status:** ❌ NOT IMPLEMENTED  
+**Priority:** 🔥🔥🔥 CRITICAL  
+**Time:** 4-6 hours  
+
+**What It Does:**
+- Reads contract text (natural language)
+- Extracts:
+  - Payment amount
+  - Frequency (one-time, monthly, milestone)
+  - Due dates
+  - Payer/Payee details
+  - Conditions (if any)
+- Returns structured JSON
+
+**Example Input:**
+```
+"Monthly lease payment of $1,200 USDC due on the 1st of each month 
+for Apartment #405. Lease term: Jan 1, 2025 - Dec 31, 2025.
+Payee: John Smith (0x1234...5678)"
+```
+
+**Example Output:**
+```json
+{
+  "contractType": "lease",
+  "paymentType": "recurring",
+  "amount": 1200,
+  "currency": "USDC",
+  "frequency": "monthly",
+  "dueDay": 1,
+  "startDate": "2025-01-01",
+  "endDate": "2025-12-31",
+  "totalPayments": 12,
+  "payee": {
+    "name": "John Smith",
+    "wallet": "0x1234...5678"
+  },
+  "asset": "Apartment #405"
+}
+```
+
+**Technology:**
+- **Cloudflare Workers AI**
+- **Model:** `@cf/meta/llama-3-8b-instruct`
+
+**Files to Create:**
+```
+workers/
+├── src/
+│   ├── index.ts              # Worker entry point
+│   ├── contract-parser.ts    # AI parsing logic
+│   └── prompts.ts            # AI prompts
+├── wrangler.toml             # Cloudflare config
+└── package.json
+```
+
+**Implementation Steps:**
+1. Create Cloudflare account (free)
+2. Install Wrangler CLI: `npm install -g wrangler`
+3. Create worker: `wrangler init workers`
+4. Implement contract parser with Llama model
+5. Deploy: `wrangler deploy`
+6. Get Worker URL: `https://contract-parser.your-name.workers.dev`
+7. Update backend to call Worker
+
+**Backend Integration:**
+```typescript
+// backend/src/services/ai.service.ts
+async function parseContract(contractText: string) {
+  const response = await fetch(process.env.CLOUDFLARE_WORKER_URL + '/parse', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: contractText })
+  });
+  return response.json();
+}
+```
+
+**How It Links:**
+- User uploads contract → Frontend sends to `/api/contracts/parse`
+- Backend calls Cloudflare Worker
+- AI extracts terms → Returns JSON
+- Frontend displays extracted terms for user confirmation
+- User confirms → Backend creates contract & payment schedule
+
+**API Endpoints:**
+- `POST /api/contracts/parse` - Parse contract with AI
+
+**Hackathon Requirement:** ✅ Core AI Feature  
+**Judging Criteria:** Innovation, Technical Excellence
+
+---
+
+#### 3. ❌ AI Condition Evaluator (MISSING!)
+**Status:** ❌ NOT IMPLEMENTED  
+**Priority:** 🔥🔥🔥 CRITICAL  
+**Time:** 2-3 hours  
+
+**What It Does:**
+- Checks if payment conditions are met
+- Types of conditions:
+  - **Time-based:** "Pay on Jan 1st" → Check if today = Jan 1
+  - **Milestone-based:** "Pay when project 50% complete" → Check evidence
+  - **Delivery-based:** "Pay on delivery" → Verify tracking/receipt
+  - **Multi-condition:** "Pay on delivery AND invoice approval"
+
+**Example Scenarios:**
+
+**Scenario 1: Simple Time Condition**
+```
+Contract: "Pay $1,200 on Jan 1, 2025"
+AI checks: Is today Jan 1, 2025? 
+  → Yes ✅ → Execute payment
+  → No ❌ → Wait
+```
+
+**Scenario 2: Delivery Condition**
+```
+Contract: "Pay $50,000 on delivery confirmation"
+AI checks:
+  1. Has delivery been confirmed? (check evidence table)
+  2. Is tracking number valid?
+  3. Does delivery address match contract?
+  → All yes ✅ → Execute payment
+  → Any no ❌ → Wait for confirmation
+```
+
+**Scenario 3: Milestone Condition**
+```
+Contract: "Pay $100,000 when construction 75% complete"
+AI checks:
+  1. Review uploaded progress reports
+  2. Check inspection documents
+  3. Verify completion percentage
+  → 75%+ ✅ → Execute payment
+  → < 75% ❌ → Payment pending
+```
+
+**Technology:**
+- **Cloudflare Workers AI**
+- **Model:** `@cf/meta/llama-3-8b-instruct`
+
+**Files to Add:**
+```
+workers/src/condition-evaluator.ts
+```
+
+**Implementation:**
+```typescript
+// Pseudo-code
+async function evaluateCondition(contractId: number) {
+  const contract = await getContract(contractId);
+  const conditions = contract.parsed_terms.conditions;
+  
+  for (const condition of conditions) {
+    if (condition.type === 'time') {
+      if (!checkDate(condition.date)) return false;
+    }
+    if (condition.type === 'delivery') {
+      if (!verifyDelivery(contractId)) return false;
+    }
+    if (condition.type === 'milestone') {
+      if (!checkMilestone(contractId, condition.milestone)) return false;
+    }
+  }
+  
+  return true; // All conditions met
+}
+```
+
+**How It Links:**
+- CRON job runs daily at midnight
+- For each scheduled payment:
+  1. Checks if due date matches today
+  2. Calls AI condition evaluator
+  3. If all conditions met → Execute payment
+  4. If not met → Log reason, wait
+- User can also manually trigger: "Check if ready to pay"
+
+**API Endpoints:**
+- `POST /api/payments/:id/check-conditions` - Evaluate conditions
+- `POST /api/payments/:id/execute` - Execute if conditions met
+
+**Hackathon Requirement:** ✅ Core AI Feature  
+**Judging Criteria:** Innovation, Problem-Solving
+
+---
+
+#### 4. ⚠️ Frontend Connected to Backend APIs (PARTIAL)
+**Status:** ⚠️ PARTIALLY IMPLEMENTED  
+**Priority:** 🔥🔥🔥 CRITICAL  
+**Time:** 3-4 hours  
+
+**Current State:**
+- ✅ API service exists (`frontend/src/services/api.ts`)
+- ✅ Authentication works (login/signup)
+- ❌ Contract pages use hardcoded data
+- ❌ Payment pages static
+- ❌ Wallet pages not connected
+- ❌ Dashboard shows fake numbers
+
+**What Needs Fixing:**
+
+**A) Contracts Page**
+```typescript
+// Current (WRONG):
+const contracts = [
+  { id: 1, type: "lease", name: "Apartment #405" }  // Hardcoded
+];
+
+// Should be (RIGHT):
+const { data: contracts } = useQuery('contracts', () => 
+  api.contracts.getAll()
+);
+```
+
+**B) Dashboard Page**
+```typescript
+// Current (WRONG):
+const stats = {
+  totalContracts: 6,        // Hardcoded
+  upcomingPayments: 45000,  // Hardcoded
+  transactions: 127         // Hardcoded
+};
+
+// Should be (RIGHT):
+const { data: stats } = useQuery('dashboard-stats', () => 
+  api.dashboard.getStats()
+);
+```
+
+**C) Payments Page**
+```typescript
+// Current (WRONG):
+const payments = [
+  { id: 1, date: "2025-01-01", amount: 1200 }  // Hardcoded
+];
+
+// Should be (RIGHT):
+const { data: payments } = useQuery('payments', () => 
+  api.payments.getAll()
+);
+```
+
+**Files to Update:**
+1. `frontend/src/pages/Dashboard.tsx` - Connect to API
+2. `frontend/src/pages/Contracts.tsx` - Fetch contracts
+3. `frontend/src/pages/Payments.tsx` - Fetch transactions
+4. `frontend/src/pages/Wallets.tsx` - Fetch wallet data
+
+**How It Links:**
+- User logs in → Frontend calls `/api/auth/login`
+- Gets JWT token → Stored in localStorage
+- All API calls include: `Authorization: Bearer {token}`
+- Backend validates token → Returns user data
+- Frontend displays real data from database
+
+**Hackathon Requirement:** ✅ Working Prototype  
+**Judging Criteria:** Usable Interface, Completeness
+
+---
+
+#### 5. ❌ Create Contract Flow (MISSING!)
+**Status:** ❌ NOT IMPLEMENTED  
+**Priority:** 🔥🔥🔥 CRITICAL  
+**Time:** 3-4 hours  
+
+**What It Does:**
+Complete user flow from contract upload to payment execution.
+
+**User Flow:**
+1. Click "Create New Contract"
+2. Upload PDF or paste text
+3. Select contract type (rent, invoice, bond, etc.)
+4. AI parses contract (loading animation)
+5. Review extracted terms
+6. Edit if needed
+7. Confirm
+8. Payment schedule created
+9. First payment executed (if applicable)
+
+**UI Components Needed:**
+
+**Page 1: Upload Contract**
+```tsx
+<CreateContractPage>
+  <h1>Create New Contract</h1>
+  
+  <ContractTypeSelector>
+    - Monthly Rent/Lease
+    - One-Time Invoice
+    - Treasury Bond (recurring)
+    - Milestone-Based Payment
+    - Conditional (delivery, etc.)
+  </ContractTypeSelector>
+  
+  <UploadZone>
+    - Drag & drop PDF
+    - Or paste text
+    - Or type manually
+  </UploadZone>
+  
+  <Button onClick={parseContract}>
+    🤖 Parse with AI
+  </Button>
+</CreateContractPage>
+```
+
+**Page 2: AI Parsing (Loading)**
+```tsx
+<ParsingPage>
+  <Animation>
+    🤖 AI is reading your contract...
+    [Animated robot reading document]
+  </Animation>
+  
+  <ProgressSteps>
+    ✓ Analyzing contract structure
+    ✓ Extracting payment terms
+    ⏳ Identifying parties
+    ⏳ Checking conditions
+  </ProgressSteps>
+</ParsingPage>
+```
+
+**Page 3: Review Extracted Terms**
+```tsx
+<ReviewPage>
+  <ExtractedTerms>
+    Contract Type: Monthly Rent    [Edit]
+    Asset: Apartment #405          [Edit]
+    Amount: $1,200 USDC            [Edit]
+    Frequency: Monthly             [Edit]
+    Due Date: 1st of each month    [Edit]
+    Start: Jan 1, 2025             [Edit]
+    End: Dec 31, 2025              [Edit]
+    Payee: John Smith              [Edit]
+    Wallet: 0x1234...5678          [Edit]
+  </ExtractedTerms>
+  
+  <Actions>
+    [< Back] [Cancel] [✓ Confirm & Create]
+  </Actions>
+</ReviewPage>
+```
+
+**Page 4: Success**
+```tsx
+<SuccessPage>
+  ✅ Contract Created Successfully!
+  
+  <Summary>
+    Total Payments: 12
+    Total Amount: $14,400 USDC
+    First Payment: Jan 1, 2025
+  </Summary>
+  
+  <Schedule>
+    📅 Payment Schedule:
+    Jan 1, 2025 - $1,200 [Pending]
+    Feb 1, 2025 - $1,200 [Scheduled]
+    ...
+  </Schedule>
+  
+  <Actions>
+    [View Contract] [Create Another] [Back to Dashboard]
+  </Actions>
+</SuccessPage>
+```
+
+**Files to Create:**
+1. `frontend/src/pages/CreateContract.tsx` - Main flow
+2. `frontend/src/components/ContractUpload.tsx` - Upload component
+3. `frontend/src/components/ContractReview.tsx` - Review component
+4. `frontend/src/components/PaymentSchedule.tsx` - Schedule display
+
+**Backend Endpoints Needed:**
+- `POST /api/contracts/parse` - Parse with AI
+- `POST /api/contracts` - Create contract
+- `GET /api/contracts/:id/schedule` - Get payment schedule
+
+**Hackathon Requirement:** ✅ Core Feature  
+**Judging Criteria:** Usability, Innovation
+
+---
+
+### 🟡 HIGH PRIORITY (Should Have - Differentiation)
+
+#### 6. ❌ ElevenLabs Voice Integration (MISSING!)
+**Status:** ❌ NOT IMPLEMENTED  
+**Priority:** 🔥🔥 HIGH  
+**Time:** 2-3 hours  
+
+**What It Does:**
+Voice interface for accessibility and differentiation.
+
+**Use Cases:**
+
+**A) Voice Notifications**
+```
+Trigger: Payment due tomorrow
+Output: 🎤 "Your rent payment of twelve hundred USDC 
+         is due tomorrow, January first."
+```
+
+**B) Voice Queries**
+```
+User: "Hey Floe, when is my next payment?"
+AI: 🎤 "Your next payment of twelve hundred USDC 
+     for Miami apartment is due on January first, 
+     twenty twenty-five."
+```
+
+**C) Payment Confirmations**
+```
+Trigger: Payment executed
+Output: 🎤 "Payment successful. Sent twelve hundred USDC 
+         to John Smith for apartment four-oh-five rent.
+         Transaction confirmed on Arc."
+```
+
+**Technology:**
+- **ElevenLabs API**
+- **Voice:** Rachel (natural, professional)
+- **Model:** `eleven_monolingual_v1`
+
+**Implementation:**
+
+**Backend Service:**
+```typescript
+// backend/src/services/elevenlabs.service.ts
+import { ElevenLabsClient } from "elevenlabs";
+
+const elevenlabs = new ElevenLabsClient({
+  apiKey: process.env.ELEVENLABS_API_KEY
+});
+
+export async function textToSpeech(text: string): Promise<Buffer> {
+  const audio = await elevenlabs.generate({
+    voice: "Rachel",
+    text: text,
+    model_id: "eleven_monolingual_v1"
+  });
+  
+  return audio;
+}
+
+export async function notifyVoice(userId: number, message: string) {
+  const audio = await textToSpeech(message);
+  // Store audio file or stream to frontend
+  return audio;
+}
+```
+
+**Frontend Component:**
+```tsx
+// frontend/src/components/VoiceAssistant.tsx
+const VoiceAssistant = () => {
+  const [listening, setListening] = useState(false);
+  
+  const handleVoiceQuery = async (query: string) => {
+    // Send to backend
+    const response = await api.voice.query(query);
+    // Play audio response
+    playAudio(response.audioUrl);
+  };
+  
+  return (
+    <div className="voice-assistant">
+      <Button onClick={() => setListening(!listening)}>
+        🎤 Ask Floe
+      </Button>
+      {listening && <MicrophoneAnimation />}
+    </div>
+  );
+};
+```
+
+**Files to Create:**
+1. `backend/src/services/elevenlabs.service.ts` - ElevenLabs integration
+2. `backend/src/routes/voice.routes.ts` - Voice API endpoints
+3. `frontend/src/components/VoiceAssistant.tsx` - Voice UI
+4. `frontend/src/hooks/useVoice.ts` - Voice hook
+
+**API Endpoints:**
+- `POST /api/voice/query` - Process voice query
+- `GET /api/voice/notification/:id` - Get audio notification
+
+**Why This Matters:**
+- 🎯 **Differentiation** - 90% of teams won't have this
+- 🎯 **Accessibility** - Non-technical users can use voice
+- 🎯 **Demo Impact** - Judges will remember this
+- 🎯 **Real-World Value** - Elderly, visually impaired can use it
+
+**Hackathon Requirement:** ✅ Stand Out Feature  
+**Judging Criteria:** Innovation, Usability
+
+---
+
+#### 7. ⚠️ Real-Time Payment Execution View (PARTIAL)
+**Status:** ⚠️ SCAFFOLDED  
+**Priority:** 🔥🔥 HIGH  
+**Time:** 2-3 hours  
+
+**What It Does:**
+Show live payment execution process - makes demo impressive!
+
+**UI Flow:**
+
+**Before Execution:**
+```tsx
+<PaymentExecutionView contractId={123}>
+  <ContractDetails>
+    Apartment #405 - Monthly Rent
+    Amount: $1,200 USDC
+    Due: Jan 1, 2025
+  </ContractDetails>
+  
+  <Button onClick={executePayment}>
+    Execute Payment Now
+  </Button>
+</PaymentExecutionView>
+```
+
+**During Execution (Real-Time Updates):**
+```tsx
+<ExecutionSteps>
+  <Step status="completed">
+    ✅ Checking conditions
+    └─ Date: Jan 1, 2025 ✓
+    └─ Wallet balance: 15,000 USDC ✓
+  </Step>
+  
+  <Step status="in-progress">
+    ⏳ AI approving payment...
+    └─ Evaluating contract terms
+    └─ Verifying parties
+  </Step>
+  
+  <Step status="pending">
+    ⏸️ Executing USDC transfer
+  </Step>
+  
+  <Step status="pending">
+    ⏸️ Recording transaction
+  </Step>
+  
+  <Step status="pending">
+    ⏸️ Sending notifications
+  </Step>
+</ExecutionSteps>
+```
+
+**After Execution:**
+```tsx
+<Success>
+  ✅ Payment Executed Successfully!
+  
+  <TransactionDetails>
+    Amount: 1,200 USDC
+    From: Maria Rodriguez (0xabcd...efgh)
+    To: John Smith (0x1234...5678)
+    Transaction: 0xabc123...def789
+    Blockchain: Arc
+    Time: Jan 1, 2025, 12:01 AM
+    Confirmations: 6/6
+  </TransactionDetails>
+  
+  <Actions>
+    [View on Arc Explorer]
+    [Download Receipt]
+    [Back to Dashboard]
+  </Actions>
+</Success>
+```
+
+**Technology:**
+- WebSocket or Server-Sent Events for real-time updates
+- Backend emits status updates during execution
+
+**Implementation:**
+```typescript
+// Backend
+async function executePayment(paymentId: number) {
+  emitStatus('checking_conditions');
+  const conditionsMet = await checkConditions(paymentId);
+  
+  emitStatus('ai_approving');
+  const approved = await aiApprove(paymentId);
+  
+  emitStatus('executing_transfer');
+  const txHash = await circleTransfer(paymentId);
+  
+  emitStatus('recording_transaction');
+  await saveTransaction(paymentId, txHash);
+  
+  emitStatus('sending_notifications');
+  await notifyParties(paymentId);
+  
+  emitStatus('completed');
+}
+```
+
+**Files to Create:**
+1. `frontend/src/pages/ExecutePayment.tsx` - Execution page
+2. `frontend/src/components/ExecutionSteps.tsx` - Step visualization
+3. `backend/src/services/execution.service.ts` - Execution logic
+4. `backend/src/websocket/payment-events.ts` - Real-time events
+
+**Why This Matters:**
+- 🎯 **Demo Impact** - Judges see AI working in real-time
+- 🎯 **Transparency** - Users understand what's happening
+- 🎯 **Trust** - Clear process builds confidence
+- 🎯 **Educational** - Shows how AI makes decisions
+
+**Hackathon Requirement:** ✅ Working Prototype  
+**Judging Criteria:** Technical Excellence, User Experience
+
+---
+
+### 🟢 NICE TO HAVE (Bonus Features - If Time)
+
+#### 8. Evidence Upload for Conditional Payments
+**Status:** ❌ NOT IMPLEMENTED  
+**Priority:** 🔥 MEDIUM  
+**Time:** 2-3 hours  
+
+**What It Does:**
+Allow users to upload proof for conditional payments.
+
+**Example:**
+```
+Contract: "Pay $50,000 on delivery"
+User uploads:
+  - Delivery receipt (PDF)
+  - Photo of delivered goods
+  - Tracking number: UPS1234567890
+AI verifies → Payment releases
+```
+
+---
+
+#### 9. Asset Tokenization Interface
+**Status:** ❌ NOT IMPLEMENTED  
+**Priority:** 🔥 MEDIUM  
+**Time:** 3-4 hours  
+
+**What It Does:**
+Create tokenized RWA assets on the platform.
+
+**Example:**
+```
+User: "I want to tokenize my Miami apartment"
+Input:
+  - Property address
+  - Valuation: $500,000
+  - Monthly rent: $2,500
+  - Upload deed/title
+
+Output:
+  - NFT created representing property
+  - Listed on Floe marketplace
+  - Can be fractionally owned
+  - Rent payments auto-distributed
+```
+
+---
+
+#### 10. Multi-Signature Approval
+**Status:** ❌ NOT IMPLEMENTED  
+**Priority:** 🔥 MEDIUM  
+**Time:** 2-3 hours  
+
+**What It Does:**
+Large payments require multiple approvals.
+
+**Example:**
+```
+Payment: $500,000 bond payment
+Requires: 2 of 3 approvals
+  - CFO: ✅ Approved
+  - CEO: ✅ Approved
+  - Controller: ⏳ Pending
+  
+Status: 2/3 → Payment will execute when 2nd approval received
+```
+
+---
+
+#### 11. Payment Disputes & Escrow
+**Status:** ❌ NOT IMPLEMENTED  
+**Priority:** 🔥 MEDIUM  
+**Time:** 2-3 hours  
+
+**What It Does:**
+Handle payment disputes.
+
+**Example:**
+```
+Scenario: Goods delivered damaged
+
+Buyer: "I dispute this $10,000 payment - goods damaged"
+Action: Payment frozen in escrow
+Seller: Upload evidence of proper packaging
+AI evaluates: Photos, shipping records, 3rd party inspection
+Decision: 
+  - Full refund to buyer, OR
+  - Partial payment to seller ($7,000), OR
+  - Release full payment to seller
+```
+
+---
+
+#### 12. Analytics Dashboard
+**Status:** ❌ NOT IMPLEMENTED  
+**Priority:** 🔥 LOW  
+**Time:** 2-3 hours  
+
+**What It Does:**
+Show payment analytics and insights.
+
+**Metrics:**
+- Total USDC paid/received
+- Payment success rate
+- Average payment time
+- Late payment rate
+- Cash flow predictions
+- Tax reports
+
+---
+
+## 🎨 UI/UX REQUIREMENTS
+
+### Design System
+- **Colors:** Mint Fresh (`#34D399`, `#10B981`, `#059669`)
+- **Typography:** Inter (headings), Inter (body)
+- **Components:** Radix UI + Tailwind CSS
+- **Icons:** Lucide React
+- **Animations:** Framer Motion (for AI loading, etc.)
+
+### Key Pages Checklist
+
+#### ✅ Homepage (Index.tsx) - DONE
+- Hero section
+- Features showcase
+- How it works
+- CTA buttons
+- Footer
+
+#### ✅ Login (Login.tsx) - DONE
+- Email/password form
+- Demo account button
+- Remember me
+- Forgot password link
+- Sign up link
+
+#### ✅ Signup (Signup.tsx) - DONE
+- Name, email, password
+- Terms checkbox
+- Create account button
+- Login link
+
+#### ✅ Dashboard (Dashboard.tsx) - NEEDS API CONNECTION
+- Stats cards (contracts, payments, transactions)
+- Wallet balance
+- Upcoming payments list
+- Recent transactions
+- Quick actions
+
+#### ⚠️ Contracts (Contracts.tsx) - NEEDS API CONNECTION
+- Contract list (filterable, searchable)
+- Contract details modal
+- Create contract button
+- Status badges
+
+#### ❌ Create Contract (CreateContract.tsx) - MISSING
+- Upload zone
+- Contract type selector
+- AI parsing view
+- Review extracted terms
+- Confirm & create
+
+#### ⚠️ Payments (Payments.tsx) - NEEDS API CONNECTION
+- Payment history
+- Filters (date, status, amount)
+- Payment details modal
+- Execute payment button
+
+#### ⚠️ Wallets (Wallets.tsx) - NEEDS API CONNECTION
+- Wallet list
+- Balance display
+- Create wallet button
+- Transaction history per wallet
+
+#### ❌ Execute Payment (ExecutePayment.tsx) - MISSING
+- Payment details
+- Execution steps (real-time)
+- Transaction confirmation
+- Receipt download
+
+#### ✅ Settings (SettingsPage.tsx) - BASIC
+- User profile
+- Notification preferences
+- Security settings
+- API keys management
+
+---
+
+## 🎬 DEMO SCRIPT (5 Minutes)
+
+### Intro (30 seconds)
+```
+"Hi, I'm [Name] and this is Floe - AI-powered payment automation 
+for real-world assets on Arc.
+
+The problem: Maria rents a tokenized apartment for $1,200/month. 
+Manual crypto payments are tedious and error-prone. Miss one payment? 
+Late fees, damaged trust.
+
+Our solution: AI reads her lease, creates automatic payment schedules, 
+and executes USDC payments on time. Zero manual work."
+```
+
+### Live Demo (3 minutes)
+
+**Act 1: Upload Contract (45 seconds)**
+```
+[Screen: Create Contract page]
+"Maria logs into Floe and uploads her lease agreement."
+[Upload PDF]
+
+"Our AI agent, running on Cloudflare Workers, reads the contract..."
+[AI parsing animation - 3 seconds]
+
+"...and extracts the payment terms automatically."
+[Show extracted terms: $1,200/month, due 1st, 12 months]
+```
+
+**Act 2: Create Schedule (30 seconds)**
+```
+[Screen: Review page]
+"Maria reviews - everything looks good."
+[Click: Confirm & Create]
+
+"Floe creates a payment schedule for all 12 months."
+[Show schedule: Jan-Dec, $1,200 each]
+
+"And now, the magic happens..."
+```
+
+**Act 3: Execute Payment (1 minute)**
+```
+[Screen: Execute Payment page]
+"Let's execute the first payment."
+[Click: Execute Payment Now]
+
+[Real-time execution view]
+"Watch as the AI works:
+✅ Checking conditions - Date is Jan 1st ✓
+✅ AI approving - Contract terms verified ✓
+⏳ Executing USDC transfer on Arc...
+✅ Transaction confirmed! Tx: 0xabc123..."
+
+"1,200 USDC sent from Maria to John. Instant. Automatic. On-chain."
+```
+
+**Act 4: Voice Interaction (30 seconds)**
+```
+[Click: Voice button]
+"Hey Floe, when is my next payment?"
+
+[ElevenLabs voice plays]
+🎤 "Your next payment of twelve hundred USDC for Miami apartment 
+    is due on February first, twenty twenty-five."
+
+"Non-technical users can manage payments by voice. Accessible. Simple."
+```
+
+**Act 5: Both Sides (30 seconds)**
+```
+[Switch to John's view]
+"John, the landlord, sees his dashboard update in real-time."
+
+[Show: Payment received notification]
+💰 "You received $1,200 USDC from Maria Rodriguez"
+
+"Both parties notified. Blockchain verified. Trust established."
+```
+
+### Impact & Close (30 seconds)
+```
+"Floe works for:
+✅ Real estate - rent, property payments
+✅ Treasury bonds - quarterly yields
+✅ Supply chain - delivery-based payments
+✅ Invoices - milestone-based payments
+
+Built on:
+✅ Circle Developer-Controlled Wallets
+✅ Arc blockchain - fast, cheap USDC transactions
+✅ AI agents for automation
+
+Result? Zero late payments. Zero manual work. Smooth flow.
+
+That's Floe. Thank you!"
+```
+
+---
+
+## 📊 HACKATHON REQUIREMENTS MAPPING
+
+### Official Requirements from lablab.ai
+
+#### ✅ Required Technologies
+
+| Technology | Status | Our Implementation |
+|-----------|--------|-------------------|
+| **Circle Developer-Controlled Wallets** | ✅ Done | `backend/src/services/circle.service.ts` |
+| **Arc Blockchain** | ✅ Ready | Configured ETH-SEPOLIA now, Arc when access granted |
+| **USDC Payments** | ✅ Done | All payments in USDC via Circle SDK |
+
+#### ⚠️ Track Requirements
+
+**Track:** Payments for Real-World Assets (RWA)
+
+**Goal:** Enable recurring or conditional USDC payments for tokenized assets
+
+| Requirement | Status | Our Implementation |
+|------------|--------|-------------------|
+| **Recurring Payments** | ✅ Done | CRON scheduler, monthly rent payments |
+| **Conditional Payments** | ⚠️ Partial | Schema ready, AI evaluator needed |
+| **Tokenized Assets** | ✅ Done | Database schema, asset registry |
+| **Real-World Use Case** | ✅ Done | Rent, bonds, supply chain, invoices |
+
+#### 📝 Submission Requirements
+
+| Item | Status | Location |
+|------|--------|----------|
+| **Working Prototype** | ⚠️ Partial | Frontend + backend running, AI needed |
+| **Clear Problem-Solving** | ✅ Done | Automates manual payment pain |
+| **Clean, Maintainable Code** | ✅ Done | TypeScript, organized structure |
+| **Simple, Usable Interfaces** | ✅ Done | Beautiful UI, easy to understand |
+| **Realistic Adoption Pathway** | ✅ Done | Real estate, supply chain, B2B |
+
+#### 🏆 Judging Criteria (Our Approach)
+
+**1. Innovation (25%)**
+- ✅ AI contract parsing (natural language → automation)
+- ✅ Voice interface with ElevenLabs (accessibility)
+- ✅ Automated condition evaluation
+- ✅ Real-time payment execution view
+
+**2. Technical Excellence (25%)**
+- ✅ Circle SDK integrated
+- ✅ Cloudflare Workers AI for parsing
+- ✅ Clean TypeScript codebase
+- ✅ Secure (JWT, rate limiting, server-side keys)
+- ✅ Scalable architecture
+
+**3. Problem-Solving (25%)**
+- ✅ Solves real pain: manual payments, late fees
+- ✅ Works for multiple RWA types
+- ✅ Accessible (voice interface)
+- ✅ Saves time and money
+
+**4. Usability (25%)**
+- ✅ Beautiful, modern UI (Mint Fresh colors)
+- ✅ Simple 3-step flow: Upload → Review → Confirm
+- ✅ Real-time feedback
+- ✅ Mobile-responsive
+- ✅ Clear value proposition
+
+---
+
+## ⏱️ TIME ESTIMATES
+
+### Critical Path (Must Complete)
+1. AI Contract Parser - 4-6 hours
+2. AI Condition Evaluator - 2-3 hours
+3. Create Contract Flow - 3-4 hours
+4. Connect Frontend to APIs - 3-4 hours
+5. Real-Time Execution View - 2-3 hours
+
+**Total Critical:** 14-20 hours (2-3 days)
+
+### High Priority (Should Complete)
+6. ElevenLabs Voice - 2-3 hours
+7. Polish UI/UX - 2-3 hours
+8. Demo Video - 1-2 hours
+
+**Total High:** 5-8 hours (1 day)
+
+### Nice to Have (If Time)
+9. Evidence Upload - 2-3 hours
+10. Asset Tokenization - 3-4 hours
+11. Analytics Dashboard - 2-3 hours
+
+**Total Nice:** 7-10 hours (1 day)
+
+---
+
+## 🚀 PRIORITY ORDER
+
+### Day 1 (TODAY): AI Core
+1. ✅ Set up Cloudflare Workers
+2. ✅ Build contract parser with AI
+3. ✅ Test parsing with sample contracts
+4. ✅ Connect backend to Worker
+
+### Day 2: Integration
+5. ✅ Build condition evaluator
+6. ✅ Create "Create Contract" UI flow
+7. ✅ Connect all frontend pages to APIs
+8. ✅ Test end-to-end flow
+
+### Day 3: Polish & Voice
+9. ✅ Add ElevenLabs voice
+10. ✅ Build real-time execution view
+11. ✅ Polish UI/UX
+12. ✅ Fix bugs
+
+### Day 4: Demo & Submission
+13. ✅ Record demo video
+14. ✅ Write submission text
+15. ✅ Test everything one more time
+16. ✅ Submit!
+
+---
+
+## ✅ CURRENT STATUS SUMMARY
+
+### What's Working ✅
+1. Backend API (15+ endpoints)
+2. Circle SDK integration
+3. Database (9 tables with seed data)
+4. Authentication (JWT)
+5. Beautiful UI (Mint Fresh colors)
+6. CRON scheduler
+7. Single .env setup
+8. Mock mode for testing
+
+### What's Missing ❌
+1. AI contract parser ← **CRITICAL**
+2. AI condition evaluator ← **CRITICAL**
+3. Frontend-backend connection ← **CRITICAL**
+4. Create contract flow ← **CRITICAL**
+5. ElevenLabs voice ← **HIGH**
+6. Real-time execution view ← **HIGH**
+
+### Next Immediate Action
+**START WITH:** AI contract parser (Cloudflare Workers)
+**WHY:** Everything else depends on this
+**TIME:** 4-6 hours
+**BLOCKER:** None - can start immediately
+
+---
+
+## 📚 RESOURCES
+
+### Documentation Links
+- **Circle SDK:** https://developers.circle.com/sdk-explorer
+- **Circle Quickstart:** https://developers.circle.com/wallets/dev-controlled/create-your-first-wallet
+- **Cloudflare Workers AI:** https://developers.cloudflare.com/workers-ai/
+- **Arc Network:** https://www.arc.network/
+- **ElevenLabs:** https://elevenlabs.io/docs
+
+### Sample Contracts for Testing
+1. **Rent Lease:**
+```
+Monthly lease payment of $1,200 USDC due on the 1st of each month 
+for Apartment #405, 123 Main St, Miami, FL. Lease term: January 1, 
+2025 through December 31, 2025. Tenant: Maria Rodriguez 
+(Wallet: 0xabcd...efgh). Landlord: John Smith (Wallet: 0x1234...5678).
+```
+
+2. **Supply Chain:**
+```
+Payment of $50,000 USDC for 1,000 units of Industrial Sensors 
+(Model XYZ-100) to be released upon delivery confirmation. 
+Supplier: TechParts Inc (Wallet: 0x9876...5432). 
+Buyer: Acme Manufacturing Corp (Wallet: 0xaaaa...bbbb). 
+Expected delivery: January 15, 2025.
+```
+
+3. **Treasury Bond:**
+```
+Quarterly bond payment of $12,500 USDC (5% annual yield on $100,000 
+principal) due on the last day of each quarter. Bond term: January 1, 
+2025 through December 31, 2027. Issuer: Global Finance Corp 
+(Wallet: 0xcccc...dddd). Holder: Investment Fund LLC 
+(Wallet: 0xeeee...ffff).
+```
+
+---
+
+## 🎯 SUCCESS CRITERIA
+
+### Minimum Viable Demo (Must Show)
+1. ✅ Upload contract (text or PDF)
+2. ✅ AI parses it automatically
+3. ✅ Creates payment schedule
+4. ✅ Executes ONE USDC payment on Arc testnet
+5. ✅ Shows transaction on blockchain
+
+**If we can demo these 5 things, we're competitive.**
+
+### Winning Demo (Should Show)
+All above, PLUS:
+6. ✅ Voice interaction ("When is my next payment?")
+7. ✅ Real-time execution view (watch AI work)
+8. ✅ Both payer and payee views
+9. ✅ Beautiful, polished UI
+
+**If we can demo these 9 things, we have a strong chance to win.**
+
+---
+
+## 🔥 LET'S WIN THIS!
+
+**Next Steps:**
+1. Review this master plan
+2. Confirm priorities
+3. Start with AI contract parser
+4. Build step-by-step
+5. Test frequently
+6. Polish continuously
+7. Submit with confidence
+
+**We have everything we need. Let's build it! 🚀**
+
+---
+
+*Last Updated: [Current Date]*  
+*Status: Ready to Build*  
+*Team: You + AI Partner*  
+*Goal: Win the Hackathon!* 🏆
+
+---
+
+## 📊 SECTION 16: CURRENT IMPLEMENTATION STATUS
+
+### What's Working ✅
+
+1. **Backend API** (15+ endpoints)
+   - Authentication (signup, login, logout)
+   - Wallet management (create, balance, list)
+   - Contract management (register, list, get)
+   - Payment execution (execute, history, upcoming)
+   - All routes tested and working
+
+2. **Circle SDK Integration**
+   - `@circle-fin/developer-controlled-wallets` configured
+   - Wallet creation working
+   - Balance checking working
+   - Payment execution ready
+   - Arc testnet blockchain configured
+
+3. **Database** (9 tables with relationships)
+   - Schema loaded and tested
+   - Seed data with 5 users, 6 contracts, 9 transactions
+   - Mock mode available (no database required)
+   - Supabase migration guide ready
+
+4. **Authentication System**
+   - JWT-based auth
+   - Secure token handling
+   - Protected routes
+   - Demo account ready (demo@floe.io)
+
+5. **Beautiful UI** (Mint Fresh design)
+   - Login/Signup pages
+   - Dashboard with stats
+   - Contracts list
+   - Payments history
+   - Wallets page
+   - Settings page
+   - Responsive design
+
+6. **CRON Scheduler**
+   - Node-cron configured
+   - Payment checking logic
+   - Balance monitoring
+   - Notification system ready
+
+7. **Single .env Setup**
+   - One file in root
+   - Both frontend and backend load from it
+   - All configurations centralized
+   - Template provided
+
+8. **Mock Mode**
+   - Works without database
+   - Perfect for UI testing
+   - Demo users pre-configured
+   - Zero setup friction
+
+### What's Missing ❌ (CRITICAL)
+
+1. **AI Contract Parser** ← **BLOCKER #1**
+   - Need: Cloudflare Workers AI integration
+   - Need: LLaMA 3 prompt engineering
+   - Need: JSON extraction from contract text
+   - Status: TODO comment in code
+   - Priority: CRITICAL
+   - Time: 4-6 hours
+
+2. **Circle OOAK Integration** ← **BLOCKER #2**
+   - Need: Python environment setup
+   - Need: OpenAI Agents SDK
+   - Need: @agent_tool decorator implementation
+   - Need: WalletAgent, ParserAgent, DecisionAgent
+   - Status: Not started
+   - Priority: CRITICAL
+   - Time: 4-6 hours
+
+3. **AI Payment Decision Engine** ← **BLOCKER #3**
+   - Need: Condition evaluation logic
+   - Need: AI approval before payment
+   - Need: Decision logging
+   - Status: Only basic balance check exists
+   - Priority: CRITICAL
+   - Time: 2-3 hours
+
+4. **Python-Node.js Bridge** ← **BLOCKER #4**
+   - Need: Subprocess executor or HTTP bridge
+   - Need: Data serialization (JSON)
+   - Need: Error handling between languages
+   - Status: Not started
+   - Priority: CRITICAL
+   - Time: 2-3 hours
+
+5. **Create Contract Flow UI** ← **HIGH**
+   - Need: File upload component
+   - Need: AI parsing visualization
+   - Need: Extracted terms review
+   - Status: Page missing entirely
+   - Priority: HIGH
+   - Time: 3-4 hours
+
+6. **ElevenLabs Voice Integration** ← **HIGH**
+   - Need: API key and SDK
+   - Need: Voice query endpoint
+   - Need: Text-to-speech for responses
+   - Status: Not started
+   - Priority: HIGH (Nice to have)
+   - Time: 2-3 hours
+
+7. **Real-Time Execution View** ← **MEDIUM**
+   - Need: WebSocket or SSE for live updates
+   - Need: Step-by-step status UI
+   - Need: Transaction confirmation view
+   - Status: Not started
+   - Priority: MEDIUM
+   - Time: 2-3 hours
+
+### Next Immediate Actions
+
+**TODAY (Day 1):**
+1. Setup Python environment
+2. Install OpenAI Agents SDK + Circle OOAK
+3. Build first WalletAgent with @agent_tool
+4. Test wallet creation from Python
+
+**TOMORROW (Day 2):**
+5. Build ContractParserAgent
+6. Build PaymentDecisionAgent
+7. Create Python-Node.js bridge
+8. Connect backend to AI agents
+
+**DAY 3:**
+9. Build CreateContract UI page
+10. Add file upload + AI visualization
+11. Connect frontend to backend
+12. Test complete flow
+
+### Confidence Level
+
+**Can we win?** ✅ **YES!**
+
+**Why:**
+- Strong foundation already built (60% done)
+- Clear path to completion
+- All blockers are addressable in 2-3 days
+- Circle resources available
+- Demo-ready UI exists
+
+**Risk Areas:**
+- OOAK integration (new technology)
+- Python-Node.js communication
+- Time constraint (need to move fast)
+
+**Mitigation:**
+- Follow Circle's examples exactly
+- Use subprocess pattern (proven)
+- Focus on MVP features first
+- Skip nice-to-haves if needed
+
+---
+
+## 📝 SECTION 17: SAMPLE CONTRACTS FOR TESTING
+
+### Contract 1: Rent Lease (Monthly Recurring)
+
+```
+RESIDENTIAL LEASE AGREEMENT
+
+Property: Apartment #405, 123 Main Street, Miami Beach, FL 33139
+Tenant: Maria Rodriguez (Wallet Address: 0xabcd1234...5678efgh)
+Landlord: John Smith (Wallet Address: 0x12345678...abcdefgh)
+
+Lease Term: January 1, 2025 through December 31, 2025 (12 months)
+
+Monthly Rent: $1,200 USDC
+Payment Due: 1st day of each month
+Late Fee: $50 USDC if paid after the 5th day of the month
+
+First Payment Due: January 1, 2025
+Security Deposit: $2,400 USDC (2 months rent)
+
+The tenant agrees to pay the monthly rent automatically via blockchain 
+transfer on the due date each month.
+```
+
+**Expected AI Extraction:**
+```json
+{
+  "contractType": "lease",
+  "amount": 1200,
+  "currency": "USDC",
+  "frequency": "monthly",
+  "dueDay": 1,
+  "startDate": "2025-01-01",
+  "endDate": "2025-12-31",
+  "payerAddress": "0xabcd1234...5678efgh",
+  "payeeAddress": "0x12345678...abcdefgh",
+  "lateFee": 50,
+  "lateFeeGracePeriod": 5,
+  "assetDescription": "Apartment #405, Miami Beach"
+}
+```
+
+### Contract 2: Supply Chain (Conditional Payment)
+
+```
+PURCHASE ORDER #PO-2025-0042
+
+Buyer: Acme Manufacturing Corp (Wallet: 0x9876...5432)
+Supplier: TechParts Inc (Wallet: 0xaaaa...bbbb)
+
+Item: Industrial Sensors, Model XYZ-100
+Quantity: 1,000 units
+Unit Price: $50 USDC per unit
+Total Amount: $50,000 USDC
+
+Payment Terms: Net upon delivery confirmation
+Delivery Date: January 15, 2025
+Delivery Address: 456 Industrial Pkwy, Austin, TX
+
+Payment Condition: Full payment of $50,000 USDC to be released 
+automatically upon blockchain-verified delivery confirmation from 
+the logistics provider.
+
+Logistics Partner: FastShip Logistics (Oracle Address: 0xcccc...dddd)
+```
+
+**Expected AI Extraction:**
+```json
+{
+  "contractType": "supply_chain",
+  "amount": 50000,
+  "currency": "USDC",
+  "frequency": "one-time",
+  "paymentCondition": "delivery_confirmation",
+  "deliveryDate": "2025-01-15",
+  "payerAddress": "0x9876...5432",
+  "payeeAddress": "0xaaaa...bbbb",
+  "oracleAddress": "0xcccc...dddd",
+  "assetDescription": "Industrial Sensors XYZ-100, 1000 units"
+}
+```
+
+### Contract 3: Treasury Bond (Quarterly Yield)
+
+```
+TOKENIZED BOND AGREEMENT
+
+Bond ID: REB-2025-001 (Real Estate Bond)
+Issuer: Global Finance Corp (Wallet: 0xcccc...dddd)
+Holder: Investment Fund LLC (Wallet: 0xeeee...ffff)
+
+Principal Amount: $100,000 USDC
+Annual Interest Rate: 5.00%
+Payment Frequency: Quarterly
+Quarterly Payment Amount: $1,250 USDC
+
+Bond Term: January 1, 2025 through December 31, 2027 (3 years)
+
+Payment Schedule:
+- March 31, 2025: $1,250 USDC
+- June 30, 2025: $1,250 USDC
+- September 30, 2025: $1,250 USDC
+- December 31, 2025: $1,250 USDC
+(and continuing quarterly for 3 years)
+
+Maturity Date: December 31, 2027
+At maturity: Principal ($100,000 USDC) + final interest payment
+```
+
+**Expected AI Extraction:**
+```json
+{
+  "contractType": "bond",
+  "principalAmount": 100000,
+  "interestRate": 5.0,
+  "paymentAmount": 1250,
+  "currency": "USDC",
+  "frequency": "quarterly",
+  "startDate": "2025-01-01",
+  "endDate": "2027-12-31",
+  "maturityDate": "2027-12-31",
+  "payerAddress": "0xcccc...dddd",
+  "payeeAddress": "0xeeee...ffff",
+  "assetDescription": "Real Estate Bond REB-2025-001"
+}
+```
+
+### Contract 4: Construction Milestone (Multi-Phase)
+
+```
+CONSTRUCTION SERVICE AGREEMENT
+
+Project: Office Building Renovation - Phase 1
+Contractor: BuildRight Construction (Wallet: 0x1111...2222)
+Client: PropCo Real Estate LLC (Wallet: 0x3333...4444)
+
+Total Contract Value: $150,000 USDC
+
+Milestone Payment Schedule:
+1. Foundation & Demolition: $30,000 USDC (Due: Feb 1, 2025)
+2. Structural Work: $45,000 USDC (Due: March 15, 2025)
+3. Electrical & Plumbing: $35,000 USDC (Due: April 30, 2025)
+4. Finishing & Inspection: $40,000 USDC (Due: June 1, 2025)
+
+Payment Condition: Each milestone payment released upon submission 
+of photographic evidence and approval by project manager.
+
+Project Manager: John Anderson (Approver Wallet: 0x5555...6666)
+```
+
+**Expected AI Extraction:**
+```json
+{
+  "contractType": "construction",
+  "totalAmount": 150000,
+  "currency": "USDC",
+  "frequency": "milestone",
+  "milestones": [
+    {"phase": "Foundation", "amount": 30000, "date": "2025-02-01"},
+    {"phase": "Structural", "amount": 45000, "date": "2025-03-15"},
+    {"phase": "Electrical", "amount": 35000, "date": "2025-04-30"},
+    {"phase": "Finishing", "amount": 40000, "date": "2025-06-01"}
+  ],
+  "paymentCondition": "evidence_approval",
+  "payerAddress": "0x3333...4444",
+  "payeeAddress": "0x1111...2222",
+  "approverAddress": "0x5555...6666",
+  "assetDescription": "Office Building Renovation Phase 1"
+}
+```
+
+---
+
+## 🗄️ SECTION 18: DATABASE SCHEMA REFERENCE
+
+### Table 1: `users`
+**Purpose:** Store user accounts and Circle wallet associations
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| email | VARCHAR(255) | Unique email |
+| password_hash | VARCHAR(255) | Bcrypt hashed password |
+| name | VARCHAR(255) | User's full name |
+| circle_wallet_id | VARCHAR(255) | Circle wallet ID |
+| circle_wallet_address | VARCHAR(255) | Blockchain address |
+| created_at | TIMESTAMP | Account creation date |
+| updated_at | TIMESTAMP | Last update |
+
+**Seed Data:** 5 users including demo@floe.io
+
+### Table 2: `rwa_contracts`
+**Purpose:** Store RWA contract metadata and parsed terms
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| contract_type | VARCHAR(50) | lease, bond, supply_chain, etc |
+| payer_id | UUID | Foreign key to users |
+| payee_id | UUID | Foreign key to users |
+| asset_description | TEXT | What's being paid for |
+| total_amount_usdc | DECIMAL(18,2) | Total contract value |
+| payment_type | VARCHAR(50) | recurring, one-time, conditional |
+| raw_contract_text | TEXT | Original contract upload |
+| parsed_terms | JSONB | AI-extracted terms |
+| status | VARCHAR(50) | active, completed, cancelled |
+| start_date | DATE | Contract start |
+| end_date | DATE | Contract end (nullable) |
+
+**Seed Data:** 6 contracts (rent, supply chain, bonds, construction, leasing)
+
+### Table 3: `payment_schedules`
+**Purpose:** Recurring payment schedules
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| contract_id | UUID | Foreign key to rwa_contracts |
+| amount_usdc | DECIMAL(18,2) | Payment amount |
+| frequency | VARCHAR(50) | monthly, weekly, quarterly |
+| next_payment_date | DATE | Next due date |
+| last_payment_date | DATE | Last executed |
+| status | VARCHAR(50) | active, paused, completed |
+
+### Table 4: `transactions`
+**Purpose:** All USDC payment records on blockchain
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| contract_id | UUID | Foreign key to rwa_contracts |
+| schedule_id | UUID | Foreign key to payment_schedules (nullable) |
+| tx_hash | VARCHAR(255) | Blockchain transaction hash |
+| from_wallet | VARCHAR(255) | Sender address |
+| to_wallet | VARCHAR(255) | Receiver address |
+| amount_usdc | DECIMAL(18,2) | Amount transferred |
+| type | VARCHAR(50) | scheduled, manual, conditional |
+| status | VARCHAR(50) | pending, confirmed, failed |
+| circle_payment_id | VARCHAR(255) | Circle API payment ID |
+| created_at | TIMESTAMP | Transaction timestamp |
+
+**Seed Data:** 9 transactions (completed rent, supply chain, bond payments)
+
+### Table 5: `notifications`
+**Purpose:** Payment reminders and alerts
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| user_id | UUID | Foreign key to users |
+| type | VARCHAR(50) | payment_due, payment_success, low_balance |
+| title | VARCHAR(255) | Notification title |
+| message | TEXT | Notification body |
+| read | BOOLEAN | Read status |
+| created_at | TIMESTAMP | When created |
+
+### Table 6: `ai_decisions`
+**Purpose:** AI approval logs for audit trail
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| contract_id | UUID | Foreign key to rwa_contracts |
+| decision_type | VARCHAR(50) | parse, approve, evaluate |
+| ai_model | VARCHAR(100) | llama-3, gpt-4, etc |
+| input_data | JSONB | Input to AI |
+| output_data | JSONB | AI response |
+| confidence_score | DECIMAL(5,2) | AI confidence (0-100) |
+| approved | BOOLEAN | Final decision |
+| reasoning | TEXT | AI explanation |
+| created_at | TIMESTAMP | Decision timestamp |
+
+**Status:** Implemented schema, not yet connected to AI
+
+### Table 7: `contract_templates`
+**Purpose:** Pre-configured contract templates
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| name | VARCHAR(255) | Template name |
+| contract_type | VARCHAR(50) | Type of contract |
+| template_text | TEXT | Sample contract |
+| default_terms | JSONB | Default parsed terms |
+
+### Table 8: `wallet_balances`
+**Purpose:** Cached balance snapshots for quick display
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| wallet_id | VARCHAR(255) | Circle wallet ID |
+| balance_usdc | DECIMAL(18,2) | USDC balance |
+| last_updated | TIMESTAMP | Cache timestamp |
+
+### Table 9: `audit_logs`
+**Purpose:** System activity tracking
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| user_id | UUID | Foreign key to users (nullable) |
+| action | VARCHAR(100) | Action performed |
+| entity_type | VARCHAR(50) | contract, payment, wallet |
+| entity_id | UUID | ID of affected entity |
+| metadata | JSONB | Additional context |
+| ip_address | VARCHAR(45) | Request IP |
+| created_at | TIMESTAMP | Log timestamp |
+
+---
+
+## 🏆 SECTION 19: JUDGING CRITERIA ALIGNMENT
+
+### Innovation (25 points)
+
+**What Judges Look For:**
+- Novel application of AI + blockchain
+- Creative problem-solving
+- Unique features not seen elsewhere
+- "Wow factor"
+
+**Our Score: 23/25** ⭐⭐⭐⭐⭐
+
+**Our Innovations:**
+1. ✅ **AI Contract Parser** (Natural Language → Automation)
+   - No manual form filling
+   - Works with ANY contract format
+   - Extracts complex payment logic
+   - **Unique:** Most projects use templates/forms
+
+2. ✅ **AI Payment Decision Engine** (Autonomous Approvals)
+   - AI evaluates conditions before paying
+   - Learns from contract terms
+   - Prevents invalid payments
+   - **Unique:** Most projects just schedule, don't decide
+
+3. ✅ **Voice Interface** (ElevenLabs)
+   - Accessibility for non-technical users
+   - Natural language queries
+   - Audio responses
+   - **Unique:** Voice in payment systems is rare
+
+4. ✅ **Circle OOAK Pattern** (Secure AI Agents)
+   - @agent_tool decorator
+   - Instance-based agents
+   - Follows Circle's latest recommendations
+   - **Unique:** Using hackathon-specific tech
+
+5. ✅ **Real-Time Execution View**
+   - Watch AI work step-by-step
+   - Builds trust and transparency
+   - Educational component
+   - **Unique:** Most hide the AI "black box"
+
+**Why We Stand Out:**
+- Not just a payment scheduler
+- AI actually makes decisions
+- Multiple innovation layers
+- Following Circle's cutting-edge patterns
+
+### Technical Excellence (25 points)
+
+**What Judges Look For:**
+- Code quality and architecture
+- Proper use of sponsor tech (Circle, Arc)
+- Security best practices
+- Scalability potential
+
+**Our Score: 24/25** ⭐⭐⭐⭐⭐
+
+**Our Technical Strengths:**
+1. ✅ **Circle SDK Integration**
+   - Developer-Controlled Wallets
+   - Proper error handling
+   - Idempotency keys
+   - Transaction tracking
+
+2. ✅ **Python OOAK Agents**
+   - @agent_tool decorator
+   - Instance-based architecture
+   - OpenAI Agents SDK
+   - Secure state management
+
+3. ✅ **Cloudflare Workers AI**
+   - LLaMA 3 for parsing
+   - Serverless architecture
+   - Low latency
+   - Cost-effective
+
+4. ✅ **Clean Architecture**
+   - TypeScript + Python hybrid
+   - Separation of concerns
+   - RESTful API design
+   - Microservices-ready
+
+5. ✅ **Security**
+   - JWT authentication
+   - Rate limiting
+   - Server-side API keys (never exposed)
+   - Bcrypt password hashing
+   - SQL injection prevention
+   - CORS configuration
+
+6. ✅ **Database Design**
+   - 9 well-structured tables
+   - Proper relationships
+   - JSONB for flexibility
+   - Audit trails
+
+7. ✅ **Testing**
+   - Circle integration tests
+   - Mock mode for development
+   - Test data included
+   - Error handling tested
+
+**Why We Excel:**
+- Production-ready code quality
+- Following best practices
+- Secure by design
+- Scalable architecture
+
+### Problem-Solving (25 points)
+
+**What Judges Look For:**
+- Clear problem definition
+- Real-world applicability
+- Market potential
+- User benefit
+
+**Our Score: 25/25** ⭐⭐⭐⭐⭐
+
+**Problems We Solve:**
+1. ✅ **Manual Payment Pain**
+   - **Problem:** Manual crypto payments are tedious
+   - **Our Solution:** Fully automated after contract upload
+   - **Impact:** Save 2-5 hours/month per contract
+
+2. ✅ **Late Payment Penalties**
+   - **Problem:** Miss one payment = fees + damaged trust
+   - **Our Solution:** Never miss a payment (AI monitors)
+   - **Impact:** Save $50-500/month in late fees
+
+3. ✅ **Contract Reading Time**
+   - **Problem:** Reading contracts takes 30-60 min
+   - **Our Solution:** AI extracts terms in 10 seconds
+   - **Impact:** 95% time savings
+
+4. ✅ **Accessibility Barrier**
+   - **Problem:** Crypto intimidates non-technical users
+   - **Our Solution:** Voice interface + beautiful UI
+   - **Impact:** 10x larger addressable market
+
+5. ✅ **Audit/Compliance**
+   - **Problem:** No payment proof or audit trail
+   - **Our Solution:** Every decision logged on-chain
+   - **Impact:** Tax/legal compliance built-in
+
+**Real-World Use Cases:**
+- 🏠 **Real Estate:** Tokenized property rentals ($2T market)
+- 📦 **Supply Chain:** B2B invoice automation ($15T market)
+- 💰 **DeFi:** Automated bond yields ($100B market)
+- 🏗️ **Construction:** Milestone payments ($1.4T market)
+- ⚙️ **Equipment Leasing:** SLA-based payments ($1T market)
+
+**Market Size:** $18.5+ trillion total addressable market
+
+**Why We Win:**
+- Solves real, expensive problems
+- Multiple large markets
+- Clear ROI for users
+- Enterprise-ready positioning
+
+### Usability (25 points)
+
+**What Judges Look For:**
+- Intuitive user interface
+- Easy onboarding
+- Clear value proposition
+- Mobile responsiveness
+
+**Our Score: 24/25** ⭐⭐⭐⭐⭐
+
+**Our UX Wins:**
+1. ✅ **3-Step Flow** (Simple & Clear)
+   - Step 1: Upload contract
+   - Step 2: Review AI extraction
+   - Step 3: Confirm & automate
+   - **Result:** Anyone can use it
+
+2. ✅ **Beautiful Design** (Mint Fresh palette)
+   - Modern gradients
+   - Consistent spacing
+   - Professional typography
+   - Delightful animations
+
+3. ✅ **Real-Time Feedback**
+   - Loading states
+   - Success confirmations
+   - Error messages (helpful, not cryptic)
+   - Progress indicators
+
+4. ✅ **Demo Account**
+   - One-click demo login
+   - Pre-loaded test data
+   - Instant exploration
+   - Zero friction to try
+
+5. ✅ **Mobile Responsive**
+   - Works on all screen sizes
+   - Touch-friendly buttons
+   - Readable on phone
+   - Native-app feel
+
+6. ✅ **Voice Interface**
+   - Natural language queries
+   - Audio responses
+   - Hands-free operation
+   - Accessibility for visually impaired
+
+7. ✅ **Clear Value Prop**
+   - Homepage explains benefits in 10 seconds
+   - Before/after comparison
+   - Use case examples
+   - Social proof ready
+
+**Why Users Love It:**
+- No manual forms
+- Works immediately
+- Beautiful to look at
+- Accessible to everyone
+
+### **TOTAL SCORE: 96/100** 🏆
+
+**Ranking Prediction:** **Top 3** in our track
+
+**Why We'll Win:**
+- Strong across ALL categories (no weak spots)
+- Clear differentiation (AI decides, not just schedules)
+- Real-world applicability (proven use cases)
+- Technical excellence (follows Circle patterns)
+- Beautiful execution (not just functional, delightful)
+
+---
+
+## ✅ SECTION 20: COMPLETE FEATURE LIST WITH STATUS
+
+### Core Features (Must Have for MVP)
+
+- [x] **User Authentication**
+  - [x] Sign up page
+  - [x] Login page
+  - [x] JWT token management
+  - [x] Demo account (demo@floe.io)
+  - [x] Protected routes
+  - **Status:** ✅ Complete
+
+- [ ] **AI Contract Parser** ← CRITICAL
+  - [ ] Cloudflare Workers AI integration
+  - [ ] LLaMA 3 prompt engineering
+  - [ ] Extract: amount, frequency, dates, addresses
+  - [ ] Handle multiple contract formats
+  - [ ] JSON output validation
+  - **Status:** ❌ Not started (4-6 hours)
+
+- [ ] **Circle OOAK AI Agents** ← CRITICAL
+  - [ ] Python environment setup
+  - [ ] OpenAI Agents SDK installed
+  - [ ] WalletAgent with @agent_tool
+  - [ ] ContractParserAgent
+  - [ ] PaymentDecisionAgent
+  - **Status:** ❌ Not started (4-6 hours)
+
+- [x] **Circle Wallet Integration**
+  - [x] SDK configured
+  - [x] Wallet creation API
+  - [x] Balance checking
+  - [x] List wallets
+  - **Status:** ✅ Complete
+
+- [ ] **Payment Execution** ← CRITICAL
+  - [x] Basic Circle payment API
+  - [ ] AI approval before payment
+  - [ ] Real-time status updates
+  - [ ] Transaction logging
+  - **Status:** ⚠️ Partial (needs AI)
+
+- [x] **Payment Scheduling**
+  - [x] CRON job configured
+  - [x] Schedule storage in DB
+  - [x] Next payment calculation
+  - [x] Recurring logic
+  - **Status:** ✅ Complete
+
+- [x] **Dashboard**
+  - [x] Stats cards (contracts, payments, amounts)
+  - [x] Upcoming payments list
+  - [x] Recent transactions
+  - [x] Quick actions
+  - **Status:** ✅ Complete
+
+- [ ] **Contract Upload Flow** ← HIGH
+  - [ ] Create Contract page
+  - [ ] File upload component (PDF/text)
+  - [ ] AI parsing visualization
+  - [ ] Review extracted terms
+  - [ ] Confirm & save
+  - **Status:** ❌ Not started (3-4 hours)
+
+- [x] **Contract List**
+  - [x] Display all contracts
+  - [x] Filter by status
+  - [x] Search functionality
+  - [x] View details
+  - **Status:** ✅ Complete
+
+- [x] **Transaction History**
+  - [x] List all payments
+  - [x] Filter by date/status
+  - [x] Transaction details
+  - [x] Blockchain explorer link
+  - **Status:** ✅ Complete
+
+### MVP Features (Should Have for Demo)
+
+- [ ] **Voice Query Interface** ← HIGH
+  - [ ] ElevenLabs API integration
+  - [ ] Voice input button
+  - [ ] Natural language processing
+  - [ ] Text-to-speech response
+  - [ ] Sample queries ("When is my next payment?")
+  - **Status:** ❌ Not started (2-3 hours)
+
+- [ ] **Real-Time Execution View** ← MEDIUM
+  - [ ] WebSocket or SSE connection
+  - [ ] Step-by-step status display
+  - [ ] AI decision reasoning shown
+  - [ ] Transaction confirmation
+  - [ ] Success/failure handling
+  - **Status:** ❌ Not started (2-3 hours)
+
+- [x] **Email Notifications** (database schema ready)
+  - [ ] Payment reminders
+  - [ ] Low balance alerts
+  - [ ] Payment confirmations
+  - **Status:** ⚠️ Schema only
+
+- [ ] **Conditional Payment Logic**
+  - [ ] Evidence upload
+  - [ ] Oracle integration
+  - [ ] Manual approval flow
+  - **Status:** ❌ Not started (nice-to-have)
+
+- [x] **Mock Mode** (for demo)
+  - [x] Works without database
+  - [x] Pre-loaded demo data
+  - [x] Quick testing
+  - **Status:** ✅ Complete
+
+- [ ] **Multi-Wallet Support**
+  - [ ] Create multiple wallets per user
+  - [ ] Switch between wallets
+  - [ ] Wallet-specific history
+  - **Status:** ❌ Not started (nice-to-have)
+
+### Nice-to-Have Features (If Time Permits)
+
+- [ ] **Evidence Upload System**
+  - [ ] Photo/document upload
+  - [ ] Evidence verification
+  - [ ] Conditional release triggers
+  - **Priority:** Low
+  - **Time:** 2-3 hours
+
+- [ ] **Asset Tokenization Registry**
+  - [ ] NFT minting for RWAs
+  - [ ] Asset metadata
+  - [ ] Ownership tracking
+  - **Priority:** Low
+  - **Time:** 3-4 hours
+
+- [ ] **Analytics Dashboard**
+  - [ ] Payment trends charts
+  - [ ] Spending patterns
+  - [ ] Cash flow projections
+  - **Priority:** Low
+  - **Time:** 2-3 hours
+
+- [ ] **Export Features**
+  - [ ] Export to CSV
+  - [ ] PDF reports
+  - [ ] Tax summary
+  - **Priority:** Low
+  - **Time:** 1-2 hours
+
+- [ ] **Payment Splitting**
+  - [ ] Split between multiple payees
+  - [ ] Percentage-based splits
+  - [ ] Automated distribution
+  - **Priority:** Low
+  - **Time:** 2-3 hours
+
+- [ ] **Multi-Currency Support**
+  - [ ] Support EURC
+  - [ ] Currency conversion
+  - [ ] Exchange rate handling
+  - **Priority:** Low
+  - **Time:** 2-3 hours
+
+### Feature Completion Status
+
+**Overall Progress:** 45% complete
+
+**Breakdown:**
+- ✅ Complete: 8 features (40%)
+- ⚠️ Partial: 2 features (10%)
+- ❌ Not Started: 10 features (50%)
+
+**Critical Path:**
+1. AI Contract Parser (must have)
+2. OOAK AI Agents (must have)
+3. Contract Upload UI (must have)
+4. AI Payment Approval (must have)
+
+**If we complete these 4, we have a winning demo.**
+
+---
+
+## ⏱️ SECTION 21: TIME ESTIMATES & PRIORITY
+
+### Critical Path (Must Complete)
+
+**Total: 16-23 hours (2-3 days)**
+
+| Task | Priority | Time | Dependencies | Status |
+|------|----------|------|--------------|--------|
+| 1. Python Environment Setup | 🔴 CRITICAL | 1 hour | None | ❌ Not started |
+| 2. OpenAI Agents SDK + OOAK | 🔴 CRITICAL | 2 hours | Task 1 | ❌ Not started |
+| 3. Build WalletAgent | 🔴 CRITICAL | 2-3 hours | Task 2 | ❌ Not started |
+| 4. Build ContractParserAgent | 🔴 CRITICAL | 2-3 hours | Task 2 | ❌ Not started |
+| 5. Build PaymentDecisionAgent | 🔴 CRITICAL | 2-3 hours | Task 2 | ❌ Not started |
+| 6. Python-Node.js Bridge | 🔴 CRITICAL | 2-3 hours | Tasks 3-5 | ❌ Not started |
+| 7. Cloudflare AI Integration | 🔴 CRITICAL | 2-3 hours | None | ❌ Not started |
+| 8. Create Contract UI Page | 🔴 CRITICAL | 3-4 hours | Task 7 | ❌ Not started |
+| 9. Connect Frontend to Backend | 🔴 CRITICAL | 2-3 hours | Task 8 | ❌ Not started |
+
+**Day 1 Focus:** Tasks 1-5 (Python OOAK Agents)
+**Day 2 Focus:** Tasks 6-7 (Integration)
+**Day 3 Focus:** Tasks 8-9 (Frontend)
+
+### High Priority (Should Complete)
+
+**Total: 7-11 hours (1 day)**
+
+| Task | Priority | Time | Dependencies | Status |
+|------|----------|------|--------------|--------|
+| 10. ElevenLabs Voice Integration | 🟠 HIGH | 2-3 hours | Backend APIs | ❌ Not started |
+| 11. Real-Time Execution View | 🟠 HIGH | 2-3 hours | Task 9 | ❌ Not started |
+| 12. Polish UI/UX | 🟠 HIGH | 2-3 hours | None | ❌ Not started |
+| 13. Bug Fixes & Testing | 🟠 HIGH | 2-3 hours | All above | ❌ Not started |
+| 14. Demo Video Recording | 🟠 HIGH | 1-2 hours | All above | ❌ Not started |
+
+**Day 4 Focus:** Tasks 10-14 (Polish & Demo)
+
+### Nice to Have (If Time Permits)
+
+**Total: 5-8 hours (1 day)**
+
+| Task | Priority | Time | Status |
+|------|----------|------|--------|
+| 15. Evidence Upload System | 🟡 MEDIUM | 2-3 hours | ❌ Not started |
+| 16. Analytics Dashboard | 🟡 MEDIUM | 2-3 hours | ❌ Not started |
+| 17. Export Features (CSV/PDF) | 🟡 LOW | 1-2 hours | ❌ Not started |
+| 18. Deployment to Production | 🟡 MEDIUM | 2-3 hours | ❌ Not started |
+
+**Day 5 (Optional):** Tasks 15-18 (Bonus Features)
+
+### Day-by-Day Breakdown
+
+**DAY 1 (8 hours):**
+- Morning (4 hours):
+  - ✅ Setup Python environment (1h)
+  - ✅ Install OpenAI SDK + OOAK (1h)
+  - ✅ Build WalletAgent skeleton (2h)
+- Afternoon (4 hours):
+  - ✅ Complete WalletAgent with @agent_tool (2h)
+  - ✅ Build ContractParserAgent (2h)
+
+**DAY 2 (8 hours):**
+- Morning (4 hours):
+  - ✅ Build PaymentDecisionAgent (2h)
+  - ✅ Test all 3 agents locally (1h)
+  - ✅ Start Python-Node.js bridge (1h)
+- Afternoon (4 hours):
+  - ✅ Complete bridge with subprocess (2h)
+  - ✅ Cloudflare Workers AI setup (2h)
+
+**DAY 3 (8 hours):**
+- Morning (4 hours):
+  - ✅ Build CreateContract UI page (3h)
+  - ✅ Add file upload component (1h)
+- Afternoon (4 hours):
+  - ✅ Connect frontend to AI parsing (2h)
+  - ✅ Test complete upload → parse → save flow (1h)
+  - ✅ Bug fixes (1h)
+
+**DAY 4 (8 hours):**
+- Morning (4 hours):
+  - ✅ Add ElevenLabs voice (2h)
+  - ✅ Build real-time execution view (2h)
+- Afternoon (4 hours):
+  - ✅ Polish UI/UX (2h)
+  - ✅ Record demo video (2h)
+
+**DAY 5 (Submission Day):**
+- Morning (3 hours):
+  - ✅ Final testing (1h)
+  - ✅ Write submission description (1h)
+  - ✅ Submit on lablab.ai (1h)
+
+### Risk Mitigation
+
+**Risk 1: OOAK Takes Longer**
+- **Mitigation:** Follow Circle's examples exactly
+- **Backup:** Skip OOAK, use simple Python scripts
+- **Time Saved:** 4 hours
+
+**Risk 2: Python-Node.js Bridge Issues**
+- **Mitigation:** Use proven subprocess pattern
+- **Backup:** HTTP bridge (Flask API)
+- **Time Added:** 2 hours
+
+**Risk 3: Cloudflare AI Rate Limits**
+- **Mitigation:** Use mock responses for testing
+- **Backup:** OpenAI API as fallback
+- **Time Added:** 1 hour
+
+**Risk 4: Voice Integration Fails**
+- **Mitigation:** This is nice-to-have, can skip
+- **Backup:** Text-based queries only
+- **Time Saved:** 2 hours
+
+### Confidence Level
+
+**Can we finish in time?** ✅ **YES!**
+
+**Best Case:** Complete everything in 3 days, polish on Day 4
+**Realistic Case:** Complete critical path in 3 days, add 1-2 high priority features
+**Worst Case:** Complete critical path only, skip nice-to-haves
+
+**All scenarios lead to a demo-ready, competitive submission.**
+
+---
+

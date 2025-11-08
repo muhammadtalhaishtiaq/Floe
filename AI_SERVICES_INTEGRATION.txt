@@ -1,0 +1,317 @@
+╔═══════════════════════════════════════════════════════════════════════╗
+║   🤖 FLOE - COMPLETE AI SERVICES INTEGRATION PLAN                    ║
+║   Using ALL Available AI Services in the Hackathon                   ║
+╚═══════════════════════════════════════════════════════════════════════╝
+
+┌─────────────────────────────────────────────────────────────────────┐
+│ 📊 AVAILABLE AI SERVICES & HOW WE USE THEM                          │
+└─────────────────────────────────────────────────────────────────────┘
+
+SERVICE #1: OpenAI GPT-4 (REQUIRED)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Source: OpenAI API (openai.com)
+✅ Used For: AI Agent Orchestration
+✅ Where: Python AI agents using Circle OOAK
+
+WHAT IT DOES:
+• Main "brain" for all 3 AI agents
+• Makes intelligent decisions about payments
+• Evaluates contract conditions
+• Handles negotiation logic
+• Natural language understanding
+
+FILES THAT USE IT:
+📁 ai-agents/wallet_agent.py
+📁 ai-agents/contract_parser_agent.py  
+📁 ai-agents/payment_decision_agent.py
+
+CODE EXAMPLE:
+from openai import OpenAI
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+agent = WalletAgent(
+    model="gpt-4",  # ← OpenAI powers this
+    circle_api_key=os.getenv("CIRCLE_API_KEY"),
+    entity_secret=os.getenv("CIRCLE_ENTITY_SECRET")
+)
+
+ENV REQUIRED:
+OPENAI_API_KEY=sk-proj-...
+
+
+SERVICE #2: Cloudflare Workers AI (REQUIRED)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Source: Cloudflare (dash.cloudflare.com)
+✅ Used For: Contract Parsing with LLaMA 3
+✅ Where: ContractParserAgent
+
+WHAT IT DOES:
+• Fast, serverless AI model execution
+• Uses LLaMA 3-8B model for contract analysis
+• Extracts payment terms from legal documents
+• Cheaper and faster than OpenAI for this task
+• Runs on Cloudflare's global edge network
+
+WHY USE THIS + OpenAI?
+→ OpenAI = High-level reasoning & decision making
+→ Cloudflare = Fast, specialized contract text extraction
+→ BEST OF BOTH WORLDS!
+
+FILES THAT USE IT:
+📁 ai-agents/contract_parser_agent.py
+
+CODE EXAMPLE:
+url = f"https://api.cloudflare.com/client/v4/accounts/{CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/meta/llama-3-8b-instruct"
+
+response = requests.post(url, 
+    headers={
+        "Authorization": f"Bearer {CLOUDFLARE_API_TOKEN}",
+        "Content-Type": "application/json"
+    },
+    json={
+        "messages": [
+            {"role": "system", "content": "Extract payment terms from contracts"},
+            {"role": "user", "content": contract_text}
+        ]
+    }
+)
+
+ENV REQUIRED:
+CLOUDFLARE_ACCOUNT_ID=abc123...
+CLOUDFLARE_API_TOKEN=your_token_here
+
+
+SERVICE #3: AIML API (BONUS - Let's Use It!)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Source: aimlapi.com (Credits from lablab.ai)
+✅ Used For: Additional AI capabilities
+✅ Where: We can integrate it for extra features!
+
+WHAT IT DOES:
+• Provides access to multiple AI models
+• lablab.ai gives FREE CREDITS for hackathon participants
+• Can use for: sentiment analysis, risk assessment, fraud detection
+
+HOW WE CAN ADD IT:
+→ Risk scoring for contracts
+→ Fraud detection on payment patterns
+→ Sentiment analysis of negotiation messages
+→ Additional contract validation
+
+NEW FILE TO CREATE:
+📁 ai-agents/risk_assessment_agent.py
+
+CODE EXAMPLE (NEW):
+import requests
+
+class RiskAssessmentAgent:
+    """Uses AIML API for risk scoring"""
+    
+    def assess_payment_risk(self, contract_data, user_history):
+        url = "https://api.aimlapi.com/v1/chat/completions"
+        
+        response = requests.post(url,
+            headers={
+                "Authorization": f"Bearer {AIML_API_KEY}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": "gpt-3.5-turbo",  # Or other AIML models
+                "messages": [
+                    {"role": "system", "content": "You are a risk assessment expert"},
+                    {"role": "user", "content": f"Assess risk: {contract_data}"}
+                ]
+            }
+        )
+        
+        return response.json()
+
+ENV TO ADD:
+AIML_API_KEY=your_aimlapi_key_here
+
+
+SERVICE #4: Circle OOAK (REQUIRED)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Source: Circle (github.com/circlefin/circle-ooak)
+✅ Used For: AI agents interacting with blockchain
+✅ Where: All 3 Python agents
+
+WHAT IT DOES:
+• @agent_tool decorator for secure blockchain ops
+• Instance-based agent architecture
+• Connects AI (OpenAI) with Circle Wallets
+• Required by hackathon judges
+
+FILES THAT USE IT:
+📁 ai-agents/wallet_agent.py
+📁 ai-agents/contract_parser_agent.py
+📁 ai-agents/payment_decision_agent.py
+
+CODE EXAMPLE:
+from circle_ooak import InstanceAgent, agent_tool
+
+class WalletAgent(InstanceAgent):
+    @agent_tool
+    def send_usdc(self, from_wallet: str, to_wallet: str, amount: float):
+        # Circle SDK integration here
+        return {"tx_hash": "0x...", "status": "confirmed"}
+
+
+SERVICE #5: ElevenLabs (NICE TO HAVE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Source: elevenlabs.io
+✅ Used For: Voice interface (text-to-speech)
+✅ Where: Frontend voice commands
+
+WHAT IT DOES:
+• Voice queries: "Check my next payment"
+• Natural language voice input
+• Professional text-to-speech output
+• Makes demo WOW factor
+
+FILES TO CREATE:
+📁 frontend/src/services/voice.service.ts
+📁 frontend/src/components/VoiceAssistant.tsx
+
+CODE EXAMPLE (NEW):
+const speakText = async (text: string) => {
+    const response = await fetch(
+        `https://api.elevenlabs.io/v1/text-to-speech/voice-id`,
+        {
+            method: 'POST',
+            headers: {
+                'xi-api-key': ELEVENLABS_API_KEY,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ text })
+        }
+    );
+    
+    const audio = await response.arrayBuffer();
+    // Play audio
+};
+
+ENV REQUIRED:
+ELEVENLABS_API_KEY=your_elevenlabs_key
+
+
+┌─────────────────────────────────────────────────────────────────────┐
+│ 🎯 COMPLETE INTEGRATION ARCHITECTURE                                │
+└─────────────────────────────────────────────────────────────────────┘
+
+USER UPLOADS CONTRACT
+        ↓
+┌──────────────────────┐
+│ Frontend (React)     │
+│ • Voice Input via    │──→ ElevenLabs API
+│   ElevenLabs         │
+└──────────────────────┘
+        ↓
+┌──────────────────────┐
+│ Backend (Node.js)    │
+│ • Receives contract  │
+│ • Calls Python AI    │
+└──────────────────────┘
+        ↓
+┌────────────────────────────────────────┐
+│ Python AI Agents (Circle OOAK)         │
+│                                        │
+│ ┌────────────────────────────────┐   │
+│ │ ContractParserAgent            │   │
+│ │ • Uses Cloudflare Workers AI   │←──── Cloudflare LLaMA 3
+│ │ • Powered by OpenAI GPT-4      │←──── OpenAI API
+│ └────────────────────────────────┘   │
+│         ↓                              │
+│ ┌────────────────────────────────┐   │
+│ │ RiskAssessmentAgent (NEW!)     │   │
+│ │ • Uses AIML API                │←──── AIML API (lablab credits)
+│ │ • Risk scoring                 │   │
+│ └────────────────────────────────┘   │
+│         ↓                              │
+│ ┌────────────────────────────────┐   │
+│ │ PaymentDecisionAgent           │   │
+│ │ • Uses OpenAI GPT-4            │←──── OpenAI API
+│ │ • Makes approve/deny decision  │   │
+│ └────────────────────────────────┘   │
+│         ↓                              │
+│ ┌────────────────────────────────┐   │
+│ │ WalletAgent                    │   │
+│ │ • Uses Circle OOAK             │←──── Circle SDK
+│ │ • Executes USDC payment        │   │
+│ └────────────────────────────────┘   │
+└────────────────────────────────────────┘
+        ↓
+┌──────────────────────┐
+│ Circle Programmable  │
+│ Wallets (Arc/Sepolia)│
+│ • USDC payment sent  │
+└──────────────────────┘
+
+
+┌─────────────────────────────────────────────────────────────────────┐
+│ 📋 UPDATED .ENV FILE WITH ALL SERVICES                              │
+└─────────────────────────────────────────────────────────────────────┘
+
+# ==================
+# AI SERVICES (ALL OF THEM!)
+# ==================
+
+# 1. OpenAI (REQUIRED)
+OPENAI_API_KEY=sk-proj-...
+
+# 2. Cloudflare Workers AI (REQUIRED)
+CLOUDFLARE_ACCOUNT_ID=abc123...
+CLOUDFLARE_API_TOKEN=your_token_here
+
+# 3. AIML API (BONUS - lablab.ai credits!)
+AIML_API_KEY=your_aimlapi_key_here
+
+# 4. Circle OOAK (REQUIRED)
+CIRCLE_API_KEY=test_api_key_...
+CIRCLE_ENTITY_SECRET=your_entity_secret
+
+# 5. ElevenLabs (OPTIONAL - Voice)
+ELEVENLABS_API_KEY=your_elevenlabs_key
+
+
+┌─────────────────────────────────────────────────────────────────────┐
+│ ✅ ACTION ITEMS TO USE ALL SERVICES                                 │
+└─────────────────────────────────────────────────────────────────────┘
+
+[ ] 1. Get AIML API key from lablab.ai hackathon dashboard
+[ ] 2. Create risk_assessment_agent.py (uses AIML API)
+[ ] 3. Update .env with AIML_API_KEY
+[ ] 4. Create voice.service.ts (uses ElevenLabs)
+[ ] 5. Add voice button to frontend
+[ ] 6. Test all 5 AI services together
+[ ] 7. Highlight in demo: "We use 5 different AI services!"
+
+
+┌─────────────────────────────────────────────────────────────────────┐
+│ 🎥 DEMO TALKING POINTS                                              │
+└─────────────────────────────────────────────────────────────────────┘
+
+"Floe uses a MULTI-AI architecture:
+ 
+ ✅ OpenAI GPT-4 for intelligent decision-making
+ ✅ Cloudflare Workers AI for fast contract parsing
+ ✅ AIML API for risk assessment and fraud detection
+ ✅ Circle OOAK for secure blockchain operations
+ ✅ ElevenLabs for natural voice interaction
+ 
+ This isn't just ONE AI - it's a TEAM of specialized AIs
+ working together to automate payments safely!"
+
+
+┌─────────────────────────────────────────────────────────────────────┐
+│ 💡 WHY THIS WINS THE HACKATHON                                      │
+└─────────────────────────────────────────────────────────────────────┘
+
+✅ Uses MORE AI services than competitors
+✅ Each AI does what it's best at (specialized)
+✅ Shows technical sophistication
+✅ Maximizes lablab.ai provided credits
+✅ Impressive multi-model architecture
+✅ Real-world scalable solution
+
+

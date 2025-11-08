@@ -1,0 +1,73 @@
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Environment variables
+# .env
+# .env.local
+# .env.development
+# .env.production
+# .env.test
+# *.env
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+database/data/
+pgdata/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing
+coverage/
+.nyc_output/
+*.test.ts.snap
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Cloudflare Workers
+workers/.wrangler/
+workers/dist/
+
+# Secrets (NEVER COMMIT)
+**/secrets.json
+**/credentials.json
+**/api-keys.json
+
+# Circle SDK
+.circle/
+
+# Build artifacts
+*.tsbuildinfo
+

@@ -1,0 +1,16 @@
+{
+  "name": "floe-database-scripts",
+  "version": "1.0.0",
+  "description": "Database setup scripts for Floe",
+  "scripts": {
+    "setup": "node setup-supabase.js",
+    "setup:help": "node setup-supabase.js --help"
+  },
+  "dependencies": {
+    "pg": "^8.11.3"
+  },
+  "keywords": ["database", "supabase", "postgresql", "setup"],
+  "author": "Floe Team",
+  "license": "MIT"
+}
+
