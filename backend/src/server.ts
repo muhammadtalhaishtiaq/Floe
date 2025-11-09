@@ -45,8 +45,11 @@ const PORT = process.env.PORT || 3000;
 // MIDDLEWARE
 // ============================================
 
-// Security
-app.use(helmet());
+// Security - Disable CSP for frontend serving
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false
+}));
 
 // CORS - Dynamically configured from .env
 const allowedOrigins = process.env.FRONTEND_URL 
