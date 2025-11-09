@@ -106,6 +106,29 @@ app.use('/api/a2a', a2aRoutes); // 🤖 A2A Agent-to-Agent payments
 app.use('/api/request-center', requestCenterRoutes); // 🔔 Request Center
 app.use('/api/ai', aiRoutes); // 🤖 AI Chat, Voice, Transcription
 
+// Serve frontend static files (production only)
+if (process.env.NODE_ENV === 'production') {
+  // Path when running with ts-node-dev from backend/src/
+  const frontendPath = path.join(__dirname, '../../frontend/dist');
+  
+  logger.info(`📁 Attempting to serve frontend from: ${frontendPath}`);
+  app.use(express.static(frontendPath));
+  
+  // Serve index.html for all non-API routes (SPA support)
+  app.get('*', (req: Request, res: Response, next) => {
+    if (!req.path.startsWith('/api') && !req.path.startsWith('/health')) {
+      res.sendFile(path.join(frontendPath, 'index.html'), (err) => {
+        if (err) {
+          logger.error('Error serving index.html:', err);
+          next();
+        }
+      });
+    } else {
+      next();
+    }
+  });
+}
+
 // 404 handler
 app.use((req: Request, res: Response) => {
   res.status(404).json({
