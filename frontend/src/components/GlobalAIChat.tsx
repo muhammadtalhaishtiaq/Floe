@@ -73,6 +73,26 @@ const GlobalAIChat = () => {
 
       console.log('✅ AI Response received:', response.data);
 
+      // Check if AI wants to navigate to a protected route
+      if (response.data.navigate) {
+        const navPath = response.data.navigate;
+        const protectedRoutes = ['/dashboard', '/wallets', '/contracts', '/payments', '/a2a', '/request-center', '/settings'];
+        const isProtected = protectedRoutes.some(route => navPath.startsWith(route));
+        
+        if (isProtected && !token) {
+          // User not logged in - show auth message instead
+          const aiMessage: Message = {
+            id: (Date.now() + 1).toString(),
+            role: 'assistant',
+            content: "I'd love to show you that page, but you need to login first. Please sign in to access your dashboard features.",
+            timestamp: new Date()
+          };
+          setMessages(prev => [...prev, aiMessage]);
+          setIsTyping(false);
+          return;
+        }
+      }
+
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',

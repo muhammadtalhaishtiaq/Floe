@@ -112,6 +112,20 @@ const GlobalVoiceAssistant = () => {
       // Step 3: Check if navigation is needed
       if (aiResponse.data.navigate) {
         const navPath = aiResponse.data.navigate;
+        
+        // Check if navigation requires authentication
+        const protectedRoutes = ['/dashboard', '/wallets', '/contracts', '/payments', '/a2a', '/request-center', '/settings'];
+        const isProtected = protectedRoutes.some(route => navPath.startsWith(route));
+        
+        if (isProtected) {
+          const token = localStorage.getItem('auth_token');
+          if (!token) {
+            // User not logged in - don't navigate, just inform
+            await speakResponse("I'd love to show you that, but you need to login first. Please sign in to access your dashboard features.");
+            return;
+          }
+        }
+        
         console.log(`🧭 Navigating to: ${navPath}`);
         
         // Speak response first, then navigate
