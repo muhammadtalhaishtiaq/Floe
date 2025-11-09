@@ -6,9 +6,10 @@ const pool = new Pool({
   ssl: process.env.DATABASE_URL?.includes('supabase') 
     ? { rejectUnauthorized: false } 
     : undefined, // Enable SSL for Supabase
-  max: 20, // Maximum number of clients in the pool
-  idleTimeoutMillis: 30000, // Close idle connections after 30s
-  connectionTimeoutMillis: 10000, // Wait up to 10s for new connections
+  max: 5, // Reduced for Supabase free tier (max 60 connections total)
+  min: 0, // Don't keep idle connections
+  idleTimeoutMillis: 10000, // Close idle connections after 10s (faster)
+  connectionTimeoutMillis: 20000, // Wait up to 20s for new connections
   keepAlive: true, // Enable TCP keep-alive
   keepAliveInitialDelayMillis: 10000, // Start keep-alive after 10s
 });
