@@ -78,7 +78,7 @@ const GlobalVoiceAssistant = () => {
       formData.append('audio', audioBlob);
 
       const transcribeResponse = await axios.post(
-        'http://localhost:3000/api/ai/transcribe',
+        '/api/ai/transcribe',
         formData,
         {
           headers: {
@@ -93,7 +93,7 @@ const GlobalVoiceAssistant = () => {
       // Step 2: Get AI response (Cloudflare LLaMA 3) - SHORT VERSION
       setCurrentStatus("AI thinking...");
       const aiResponse = await axios.post(
-        'http://localhost:3000/api/ai/chat',
+        '/api/ai/chat',
         {
           message: transcribedText,
           conversationHistory: [],
@@ -134,8 +134,8 @@ const GlobalVoiceAssistant = () => {
       setIsSpeaking(true);
       setCurrentStatus("Speaking...");
 
-      const response = await axios.post(
-        'http://localhost:3000/api/ai/speak',
+    const response = await axios.post(
+      '/api/ai/speak',
         { text },
         { responseType: 'blob' }
       );

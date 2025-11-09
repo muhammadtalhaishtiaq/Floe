@@ -61,7 +61,7 @@ const GlobalAIChat = () => {
 
       const token = localStorage.getItem('auth_token');
       
-      const response = await axios.post('http://localhost:3000/api/ai/chat', {
+      const response = await axios.post('/api/ai/chat', {
         message: messageToSend,
         conversationHistory: fullHistory
       }, {
