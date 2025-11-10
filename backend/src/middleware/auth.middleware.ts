@@ -48,3 +48,35 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
   }
 };
 
+/**
+ * Optional auth middleware - doesn't fail if no token, just doesn't set user
+ * Used for routes that work with or without authentication
+ */
+export const optionalAuthMiddleware = (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const authHeader = req.headers.authorization;
+    
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.replace('Bearer ', '');
+      
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'dev_secret') as any;
+        (req as any).user = {
+          userId: decoded.userId,
+          email: decoded.email
+        };
+      } catch (error) {
+        // Invalid token, but don't fail - just continue without user
+        logger.debug('Optional auth: Invalid token, continuing without user');
+      }
+    }
+    
+    // Always continue, with or without user
+    next();
+  } catch (error: any) {
+    // Should never happen, but just in case
+    logger.error('Optional auth middleware error:', error);
+    next();
+  }
+};
+

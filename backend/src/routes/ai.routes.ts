@@ -5,7 +5,7 @@ import FormData from 'form-data';
 import { logger } from '../utils/logger';
 import { query } from '../config/database';
 import { decrypt } from '../utils/encryption.util';
-import { authMiddleware } from '../middleware/auth.middleware';
+import { authMiddleware, optionalAuthMiddleware } from '../middleware/auth.middleware';
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -63,7 +63,7 @@ async function getUserCloudflareConfig(userId: string): Promise<{ accountId: str
  * Chat with AI using Cloudflare Workers AI (LLaMA 3)
  * Uses user's database credentials (like voice feature) with env var fallback
  */
-router.post('/chat', authMiddleware, async (req: Request, res: Response) => {
+router.post('/chat', optionalAuthMiddleware, async (req: Request, res: Response) => {
   try {
     const { message, conversationHistory, shortResponse } = req.body;
     const userId = (req as any).user?.userId || (req as any).user?.id;
@@ -217,7 +217,7 @@ Be helpful, concise (under 100 words), use emojis sparingly. Guide users to spec
  * POST /api/ai/transcribe
  * Transcribe audio to text using Cloudflare Workers AI (Whisper)
  */
-router.post('/transcribe', authMiddleware, upload.single('audio'), async (req: Request, res: Response) => {
+router.post('/transcribe', optionalAuthMiddleware, upload.single('audio'), async (req: Request, res: Response) => {
   try {
     if (!req.file) {
       return res.status(400).json({ success: false, error: 'No audio file provided' });
