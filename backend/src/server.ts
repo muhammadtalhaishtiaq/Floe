@@ -61,11 +61,30 @@ app.use(cors({
   credentials: true
 }));
 
-// Rate limiting
+// Rate limiting - Generous limits for demo/production
 const limiter = rateLimit({
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'), // 15 minutes
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100'),
-  message: 'Too many requests from this IP, please try again later.'
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 500, // 500 requests per 15 minutes (much more generous)
+  standardHeaders: true, // Return rate limit info in headers
+  legacyHeaders: false,
+  handler: (req: Request, res: Response) => {
+    const retryAfter = res.getHeader('Retry-After') || 900; // 15 minutes in seconds
+    const retryMinutes = Math.ceil(Number(retryAfter) / 60);
+    const retryTime = new Date(Date.now() + (Number(retryAfter) * 1000));
+    const retryTimeString = retryTime.toLocaleTimeString('en-US', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: true 
+    });
+    
+    res.status(429).json({
+      error: 'Too Many Requests',
+      message: `Too many requests! Please try again in ${retryMinutes} minutes (at ${retryTimeString}).`,
+      retryAfter: Number(retryAfter),
+      retryMinutes: retryMinutes,
+      retryAt: retryTime.toISOString()
+    });
+  }
 });
 app.use('/api/', limiter);
 

@@ -147,7 +147,7 @@ const Index = () => {
             {/* Stats Row - More Compact */}
             <div className="flex flex-wrap gap-8 justify-center pt-6 border-t border-white/20 max-w-2xl mx-auto">
               <div className="text-center">
-                <div className="text-3xl font-bold text-white">$2M+</div>
+                <div className="text-3xl font-bold text-white">$50K+</div>
                 <div className="text-xs text-white/70">Automated</div>
               </div>
               <div className="text-center">
